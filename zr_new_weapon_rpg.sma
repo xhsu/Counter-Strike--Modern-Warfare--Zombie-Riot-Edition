@@ -1,4 +1,4 @@
-/* ammx±àĞ´Í·°æ by moddev*/
+/* ammxç¼–å†™å¤´ç‰ˆ by moddev*/
 
 #include <amxmodx>
 #include <xs>
@@ -7,18 +7,18 @@
 #include <engine>
 #include <zombieriot>
 
-#define PLUGIN "RPG»ğ¼ıÍ²"
+#define PLUGIN "RPGç«ç®­ç­’"
 #define VERSION "1.0"
 #define AUTHOR "DSHGFHDS"
 
 #define ROCKENAME "RPGrocke"
 #define ROCKEMODEL "models/rpgrocket.mdl"
 #define RPGNONEROCKE 25476
-#define MDLCOUNT 20 //±¬Õ¨ËéÆ¬µÄÊıÁ¿
-#define RPGKILLSPR "rpg" //É±µĞSPR
+#define MDLCOUNT 20 //çˆ†ç‚¸ç¢ç‰‡çš„æ•°é‡
+#define RPGKILLSPR "rpg" //æ€æ•ŒSPR
 #define RPG_IMPULSE 8528
 
-#define IS_ONLINE //ÊÇÁª»úÊ¹ÓÃ(²»ÊÇÔÚ×îIS_ONLINEÇ°Ãæ¼ÓÉÏ//,ÊÇ¾ÍÈ¥µô)
+#define IS_ONLINE //æ˜¯è”æœºä½¿ç”¨(ä¸æ˜¯åœ¨æœ€IS_ONLINEå‰é¢åŠ ä¸Š//,æ˜¯å°±å»æ‰)
 
 forward zr_gift_primary_ammo(i)
 forward zr_buy_primary_ammo(iPlayer)
@@ -30,17 +30,17 @@ new Float:g_fLastThink[33]
 new cvar_rockegravity, cvar_flyoffset, cvar_shoottime, cvar_reloadtime, cvar_flyspeed, cvar_drawtime, cvar_drawtime_none, cvar_shakerange, cvar_lightrange, cvar_rockedamagerange, cvar_rockedamage, cvar_partitiondamage, cvar_punchagele, cvar_rockeknock
 new cvar_mdltime, cvar_shootpunchagele, cvar_movespeed
 new rockesmoketrail, rockefire, rockefire2, rockesmoke, rockeexplode, rockeexplode2, g_smokeSpr, g_smokeSpr2, rockesmoke2
-new const breakmodels[][] = {"models/gibs_wallbrown.mdl", "models/gibs_woodplank.mdl", "models/gibs_brickred.mdl"} //ËéÆ¬Ä£ĞÍ
+new const breakmodels[][] = {"models/gibs_wallbrown.mdl", "models/gibs_woodplank.mdl", "models/gibs_brickred.mdl"} //ç¢ç‰‡æ¨¡å‹
 new const RPGrockelaunchermodel[][] = { "models/v_rpg.mdl", "models/pw_rpg_none.mdl", "models/pw_rpg.mdl" }
 new const RPGlaunchsound[] = "weapons/rpg7_1.wav"
 new const rockeflysound[] = "weapons/rpg_travel.wav"
 new const rockeexplodesound[] = "weapons/rocke_explode.wav"
 new g_fwBotForwardRegister,g_has_rpg[33]
 new RPG7
-new const RPGName[] = "RPG-7»ğ¼ı·¢ÉäÆ÷"
+new const RPGName[] = "RPG-7ç«ç®­å‘å°„å™¨"
 new const RPGCost = 8000
 new RPGrocket
-new const rocketName[] = "RPG»ğ¼ıµ¯"
+new const rocketName[] = "RPGç«ç®­å¼¹"
 new const rocketCost = 2000
 enum
 {
@@ -81,23 +81,23 @@ public plugin_init()
 	RegisterHam(Ham_Item_Deploy, "weapon_m3", "fw_ItemDeploy_Post", 1)
 	RegisterHam(Ham_TakeDamage, "player", "fw_TakeDamage")
 	RegisterHam(Ham_TakeDamage, "player", "fw_TakeDamage_Post", 1)
-	cvar_movespeed = register_cvar("RPG_rocke_palyerspeed", "210.0") //ÄÃ×ÅRPGĞĞ×ßµÄËÙ¶È
-	cvar_rockegravity = register_cvar("RPG_rocke_gravity", "2.0") //»ğ¼ıµÄÖØÁ¿±¶Êı
-	cvar_flyspeed = register_cvar("RPG_rocke_flyspeed", "900.0") //»ğ¼ı·ÉĞĞËÙ¶È
-	cvar_flyoffset = register_cvar("RPG_rocke_flyoffset", "1.2") //»ğ¼ı·ÉĞĞµÄ¹ìµÀÆ«ÒÆÖµ
-	cvar_shoottime = register_cvar("RPG_rocke_shoottime", "0.5") //Éä»÷¶¯×÷µÄÊ±¼ä
-	cvar_reloadtime = register_cvar("RPG_rocke_reloadtime", "3.3") //ÉÏµ¯Ê±¼ä
-	cvar_drawtime = register_cvar("RPG_rocke_drawtime", "0.86") //ÇĞ»»RPGµÄÊ±¼ä
-	cvar_drawtime_none = register_cvar("RPG_rocke_drawtime_none", "0.86") //Ã»ÓĞµ¯Ò©µÄRPGÇĞ»»Ê±¼ä
-	cvar_shootpunchagele = register_cvar("RPG_rocke_shootpunchagele", "50.0") //Éä»÷ºó×øÁ¦
-	cvar_rockedamagerange = register_cvar("RPG_rocke_damage_range", "350.0") //±¬Õ¨·¶Î§
-	cvar_rockedamage = register_cvar("RPG_rocke_damage", "7000.0") //±¬Õ¨ÉËº¦
-	cvar_partitiondamage = register_cvar("RPG_rocke_partitiondamage", "0.5") //¸ô×ÅÎïÌå±¬Õ¨µÄÉËº¦±¶Êı
-	cvar_rockeknock = register_cvar("RPG_rocke_knock", "10.0") //±¬Õ¨»÷ÍË±¶Êı
-	cvar_punchagele = register_cvar("RPG_rocke_punchagele", "30.0") //±»Õ¨ÖĞµÄÆÁÄ»Õğ¶¯·ù¶È
-	cvar_shakerange = register_cvar("RPG_rocke_shake_range", "1000.0") //±¬Õ¨µØÕğµÄÓ°Ïì·¶Î§
-	cvar_lightrange = register_cvar("RPG_rocke_light_range", "1500.0") //±¬Õ¨¹â´ÌÑÛµÄ·¶Î§
-	cvar_mdltime = register_cvar("RPG_rocke_mdltime", "5.0") //±¬Õ¨ºóËéÆ¬µÄ´æÔÚÊ±¼ä
+	cvar_movespeed = register_cvar("RPG_rocke_palyerspeed", "210.0") //æ‹¿ç€RPGè¡Œèµ°çš„é€Ÿåº¦
+	cvar_rockegravity = register_cvar("RPG_rocke_gravity", "2.0") //ç«ç®­çš„é‡é‡å€æ•°
+	cvar_flyspeed = register_cvar("RPG_rocke_flyspeed", "900.0") //ç«ç®­é£è¡Œé€Ÿåº¦
+	cvar_flyoffset = register_cvar("RPG_rocke_flyoffset", "1.2") //ç«ç®­é£è¡Œçš„è½¨é“åç§»å€¼
+	cvar_shoottime = register_cvar("RPG_rocke_shoottime", "0.5") //å°„å‡»åŠ¨ä½œçš„æ—¶é—´
+	cvar_reloadtime = register_cvar("RPG_rocke_reloadtime", "3.3") //ä¸Šå¼¹æ—¶é—´
+	cvar_drawtime = register_cvar("RPG_rocke_drawtime", "0.86") //åˆ‡æ¢RPGçš„æ—¶é—´
+	cvar_drawtime_none = register_cvar("RPG_rocke_drawtime_none", "0.86") //æ²¡æœ‰å¼¹è¯çš„RPGåˆ‡æ¢æ—¶é—´
+	cvar_shootpunchagele = register_cvar("RPG_rocke_shootpunchagele", "50.0") //å°„å‡»åååŠ›
+	cvar_rockedamagerange = register_cvar("RPG_rocke_damage_range", "350.0") //çˆ†ç‚¸èŒƒå›´
+	cvar_rockedamage = register_cvar("RPG_rocke_damage", "7000.0") //çˆ†ç‚¸ä¼¤å®³
+	cvar_partitiondamage = register_cvar("RPG_rocke_partitiondamage", "0.5") //éš”ç€ç‰©ä½“çˆ†ç‚¸çš„ä¼¤å®³å€æ•°
+	cvar_rockeknock = register_cvar("RPG_rocke_knock", "10.0") //çˆ†ç‚¸å‡»é€€å€æ•°
+	cvar_punchagele = register_cvar("RPG_rocke_punchagele", "30.0") //è¢«ç‚¸ä¸­çš„å±å¹•éœ‡åŠ¨å¹…åº¦
+	cvar_shakerange = register_cvar("RPG_rocke_shake_range", "1000.0") //çˆ†ç‚¸åœ°éœ‡çš„å½±å“èŒƒå›´
+	cvar_lightrange = register_cvar("RPG_rocke_light_range", "1500.0") //çˆ†ç‚¸å…‰åˆºçœ¼çš„èŒƒå›´
+	cvar_mdltime = register_cvar("RPG_rocke_mdltime", "5.0") //çˆ†ç‚¸åç¢ç‰‡çš„å­˜åœ¨æ—¶é—´
 }
 
 public plugin_precache()
@@ -164,7 +164,7 @@ public zr_item_event(iPlayer, item, Slot)
 	
 	if(imoney < RPGCost)
 	{
-		zr_print_chat(iPlayer, GREYCHAT, "²»¹»½ğÇ®ÎŞ·¨¹ºÂò!")
+		zr_print_chat(iPlayer, GREYCHAT, "ä¸å¤Ÿé‡‘é’±æ— æ³•è´­ä¹°!")
 		return
 	}
 	
@@ -172,7 +172,7 @@ public zr_item_event(iPlayer, item, Slot)
 	zr_set_user_money(iPlayer, imoney-RPGCost, 1)
 	new netname[64]
 	pev(iPlayer,pev_netname,netname,charsmax(netname))
-	zr_print_chat(0, GREENCHAT, "±¾Ó¦¸ÃÄÃ³ö×æÏÈµÄ·üÌØ¼ÓºÍ³¤½£Õ½¶·µÄ%s£¬ÔÚÃÍºÈÁËÒ»¿Ú·üÌØ¼ÓÒÔºó£¬ÈÂ×Å¶íÓïÓÃRPG7Õ¨ÀÃÁËÅÔ±ßÒ»Ö»½©Ê¬¡£",netname)
+	zr_print_chat(0, GREENCHAT, "æœ¬åº”è¯¥æ‹¿å‡ºç¥–å…ˆçš„ä¼ç‰¹åŠ å’Œé•¿å‰‘æˆ˜æ–—çš„%sï¼Œåœ¨çŒ›å–äº†ä¸€å£ä¼ç‰¹åŠ ä»¥åï¼Œåš·ç€ä¿„è¯­ç”¨RPG7ç‚¸çƒ‚äº†æ—è¾¹ä¸€åªåƒµå°¸ã€‚",netname)
 	}
 	else if(item == RPGrocket)
 	{
@@ -180,12 +180,12 @@ public zr_item_event(iPlayer, item, Slot)
 	
 		if(imoney < rocketCost)
 		{
-			zr_print_chat(iPlayer, BLUECHAT, "²»¹»½ğÇ®ÎŞ·¨¹ºÂò!")
+			zr_print_chat(iPlayer, BLUECHAT, "ä¸å¤Ÿé‡‘é’±æ— æ³•è´­ä¹°!")
 			return
 		}
 		else if(!g_has_rpg[iPlayer])
 		{
-			zr_print_chat(iPlayer, BLUECHAT, "ÄãÃ»ÓĞRPG!")
+			zr_print_chat(iPlayer, BLUECHAT, "ä½ æ²¡æœ‰RPG!")
 			return
 		}
 		
@@ -200,7 +200,7 @@ public zr_item_event(iPlayer, item, Slot)
 				continue
 			
 				set_pdata_int(iPlayer, 376 + get_pdata_int(iEntity, 49, 4), 15, 4)
-				zr_print_chat(iPlayer, BLUECHAT, "Äã½«RPG»ğ¼ıµ¯²¹³äÖÁ15·¢!")
+				zr_print_chat(iPlayer, BLUECHAT, "ä½ å°†RPGç«ç®­å¼¹è¡¥å……è‡³15å‘!")
 				break
 			}
 		}
@@ -236,7 +236,7 @@ public zr_gift_primary_ammo(i)
 	//return ZR_IGNORED
 	
 	set_pdata_int(iEntity, 51, 15, 4)
-	zr_print_chat(i,BLUECHAT,"»ñµÃÍê³É½±Àø:RPG»ğ¼ıµ¯")
+	zr_print_chat(i,BLUECHAT,"è·å¾—å®Œæˆå¥–åŠ±:RPGç«ç®­å¼¹")
 	return ZR_SUPERCEDE
 }
 
@@ -251,7 +251,7 @@ public zr_buy_primary_ammo(iPlayer)
 	if(!g_has_rpg[iPlayer])
 	return ZR_IGNORED
 		
-	zr_print_chat(iPlayer,BLUECHAT,"RPG»ğ¼ıµ¯ÓëÒ»°ã×Óµ¯²»Í¨ÓÃ!")
+	zr_print_chat(iPlayer,BLUECHAT,"RPGç«ç®­å¼¹ä¸ä¸€èˆ¬å­å¼¹ä¸é€šç”¨!")
 	return ZR_SUPERCEDE
 }
 

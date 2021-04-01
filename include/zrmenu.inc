@@ -5,11 +5,11 @@
 
 #include <zrconst>
 
-//¸øM²Ëµ¥ÀïÃæ×¢²áÒ»¸ö×ÓÑ¡Ïî(menunameÎªÑ¡ÏîÃû³Æ,×¢²áºó»á·µ»ØÒ»¸ö²Ëµ¥×ÓÏîID,ÔÚzr_addmenu_eventÀï»áÓÃµÃÉÏ)
+//ç»™Mèœå•é‡Œé¢æ³¨å†Œä¸€ä¸ªå­é€‰é¡¹(menunameä¸ºé€‰é¡¹åç§°,æ³¨å†Œåä¼šè¿”å›ä¸€ä¸ªèœå•å­é¡¹ID,åœ¨zr_addmenu_eventé‡Œä¼šç”¨å¾—ä¸Š)
 native zr_register_menu(const menuname[])
 
-//PostÊÂ¼ş:M²Ëµ¥ĞÂÔö×ÓÑ¡Ïî´¥·¢ÊÂ¼ş(ÓÃzr_register_menu×¢²áµÄ²Ëµ¥»áÔÚÕâÀï´¥·¢,MenuIDÊÇËüËù·µ»ØµÄIDºÅ)
+//Postäº‹ä»¶:Mèœå•æ–°å¢å­é€‰é¡¹è§¦å‘äº‹ä»¶(ç”¨zr_register_menuæ³¨å†Œçš„èœå•ä¼šåœ¨è¿™é‡Œè§¦å‘,MenuIDæ˜¯å®ƒæ‰€è¿”å›çš„IDå·)
 forward zr_addmenu_event(iPlayer, MenuID)
 
-//PreÊÂ¼ş:M²Ëµ¥µÄmenu_additem´¥·¢ÊÂ¼ş(´ò¶Ïºó¿ÉÒÔ×Ô¼ºÓÃmenu_additemÖØĞÂ¹¹½¨)
+//Preäº‹ä»¶:Mèœå•çš„menu_additemè§¦å‘äº‹ä»¶(æ‰“æ–­åå¯ä»¥è‡ªå·±ç”¨menu_additemé‡æ–°æ„å»º)
 forward zr_hook_menudata(MenuID, const MenuName[], const MenuInfo[])
