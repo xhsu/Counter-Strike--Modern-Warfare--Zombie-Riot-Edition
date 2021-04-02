@@ -94,7 +94,7 @@ stock LibExplosion_SetExploSprite(indexRaising, indexOnGround)
 	g_iLawsSprIndex[lawspr_rocketexp2] = indexOnGround;
 }
 
-stock LibExplosion_RadiusDamage(iAttacker, iInflictor, const Float:vecOrigin[3], Float:flRadius, Float:flDamage, bool:bApplyPlayerVFX, Float:flPunchMax, Float:flKnockForce)
+stock LibExplosion_RadiusDamage(iAttacker, iInflictor, const Float:vecOrigin[3], Float:flRadius, Float:flDamage)
 {
 	new iVictim = -1, Float:flTakeDamage, Float:vecOrigin2[3], Float:flDistance, Float:flAdjustedDamage;
 	new bool:bInWater = !!(engfunc(EngFunc_PointContents, vecOrigin) == CONTENTS_WATER);
@@ -135,26 +135,43 @@ stock LibExplosion_RadiusDamage(iAttacker, iInflictor, const Float:vecOrigin[3],
 			continue;
 		
 		ExecuteHamB(Ham_TakeDamage, iVictim, iInflictor, iAttacker, flAdjustedDamage, DMG_EXPLOSION);
+	}
+}
 
-		if (!is_user_alive(iVictim) || !bApplyPlayerVFX)
+stock LibExplosion_PlayerFX(iAttacker, const Float:vecOrigin[3], Float:flRadius, Float:flShakeDur, Float:flShakeFreq, Float:flShakeAmp, Float:flFadeDur, Float:flFadeHold, Float:flPunchMax, Float:flKnockForce)
+{
+	new iVictim = -1, Float:vecOrigin2[3], Float:flDistance, Float:vecPunchAngle[3], Float:vecVelocity[3], Float:flSpeed, Float:flTakeDamage, Float:flFraction;
+	while ((iVictim = engfunc(EngFunc_FindEntityInSphere, iVictim, vecOrigin, flRadius)) > 0)
+	{
+		if (iVictim < 1 || iVictim > global_get(glb_maxClients) || !is_user_alive(iVictim))
 			continue;
 
-		UTIL_ScreenShake(iVictim, 5.0, 5.0, 10.0);
-		UTIL_ScreenFade(iVictim, 0.25, 0.25, FFADE_IN, 255, 255, 255, 255);
+		pev(iVictim, pev_takedamage, flTakeDamage);
+		if (flTakeDamage == DAMAGE_NO)
+			continue;
 
-		new Float:vecPunchAngle[3];
-		vecPunchAngle[0] = random_float(-flPunchMax, flPunchMax)
-		vecPunchAngle[1] = random_float(-flPunchMax, flPunchMax)
-		vecPunchAngle[2] = random_float(-flPunchMax, flPunchMax)
-		set_pev(iVictim, pev_punchangle, vecPunchAngle)
+		if (!get_pcvar_num(g_CvarFriendlyFire) && fm_is_user_same_team(iAttacker, iVictim))
+			continue;
 		
-		new Float:vecVelocity[3], Float:flSpeed;
-		xs_vec_sub(vecOrigin2, vecOrigin, vecVelocity);								// 创造一个向量, 方向指向受害者的点。(计算时需要将受害者的坐标减去爆炸中心)
-		xs_vec_normalize(vecVelocity, vecVelocity);									// 修正此向量为单位向量
-		flSpeed = floatpower(flKnockForce, (flRadius - flDistance) / flRadius);		// 以指数衰减定义冲击波
-		xs_vec_mul_scalar(vecVelocity, flSpeed, vecVelocity);						// 向量数乘, 将速率转为速度
-		vecVelocity[2] += flKnockForce * random_float(0.35, 0.45);					// 强化竖直方向上的速度
-		set_pev(iVictim, pev_velocity, vecVelocity);									// 给受害者设置计算完毕的速度(即击退)
+		flDistance = get_distance_f(vecOrigin, vecOrigin2);
+		flFraction = (flRadius - flDistance) / flRadius;
+		pev(iVictim, pev_origin, vecOrigin2);
+
+		UTIL_ScreenShake(iVictim, flShakeDur * flFraction, flShakeFreq * flFraction, flShakeAmp * flFraction);
+		UTIL_ScreenFade(iVictim, flFadeDur, flFadeHold, FFADE_IN, 255, 255, 255, 255);
+
+		vecPunchAngle[0] = random_float(-flPunchMax, flPunchMax);
+		vecPunchAngle[1] = random_float(-flPunchMax, flPunchMax);
+		vecPunchAngle[2] = random_float(-flPunchMax, flPunchMax);
+		xs_vec_mul_scalar(vecPunchAngle, flFraction, vecPunchAngle);
+		set_pev(iVictim, pev_punchangle, vecPunchAngle);
+		
+		xs_vec_sub(vecOrigin2, vecOrigin, vecVelocity);				// 创造一个向量, 方向指向受害者的点。(计算时需要将受害者的坐标减去爆炸中心)
+		xs_vec_normalize(vecVelocity, vecVelocity);					// 修正此向量为单位向量
+		flSpeed = floatpower(flKnockForce, flFraction);				// 以指数衰减定义冲击波
+		xs_vec_mul_scalar(vecVelocity, flSpeed, vecVelocity);		// 向量数乘, 将速率转为速度
+		vecVelocity[2] += flKnockForce * random_float(0.35, 0.45);	// 强化竖直方向上的速度
+		set_pev(iVictim, pev_velocity, vecVelocity);				// 给受害者设置计算完毕的速度(即击退)
 	}
 }
 

@@ -10,7 +10,7 @@
 #include "Library/LibExplosion.sma"
 
 #define PLUGIN	"Zr Bomber"
-#define VERSION	"1.0.1"
+#define VERSION	"1.0.2"
 #define AUTHOR	"DSHGFHDS & Luna"
 
 #define C4CLASSNAME "C4BOMB"
@@ -170,7 +170,7 @@ public fw_PlayerPostThink(iPlayer)
 	
 	new Float:vecOrigin[3];
 	pev(bEntity, pev_origin, vecOrigin);
-	LibExplosion_RadiusDamage(iEntity, bEntity, vecOrigin, get_pcvar_float(cvar_range), get_pcvar_float(cvar_damage), true, 10.0, 300.0);
+	LibExplosion_RadiusDamage(iEntity, bEntity, vecOrigin, get_pcvar_float(cvar_range), get_pcvar_float(cvar_damage));
 
 	new Float:vecDir[3];
 	pev(bEntity, pev_v_angle, vecDir);
@@ -179,8 +179,14 @@ public fw_PlayerPostThink(iPlayer)
 	
 	LibExplosion_SetGlobalTrace(vecOrigin, vecDir);
 	LibExplosion_FullVFX();
+	LibExplosion_PlayerFX(iEntity, vecOrigin, get_pcvar_float(cvar_range) * 2.0,
+		5.0, 10.0, 20.0,	// Shake
+		0.25, 0.25,	// Fade
+		25.0,	// Punch
+		400.0);	// Knock
+
 	emit_sound(bEntity, CHAN_STATIC, ExplosionSound, 1.2, 0.6, 0, random_num(92, 104));
-	
+
 	set_pev(bEntity, pev_flags, FL_KILLME);
 	}
 	return
