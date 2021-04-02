@@ -6,9 +6,12 @@
 #include <zombieriot>
 #include <xs>
 
-#define PLUGIN "Zr Bomber"
-#define VERSION "1.0"
-#define AUTHOR "DSHGFHDS"
+#include <offset>
+#include "Library/LibExplosion.sma"
+
+#define PLUGIN	"Zr Bomber"
+#define VERSION	"1.0.1"
+#define AUTHOR	"DSHGFHDS & Luna"
 
 #define C4CLASSNAME "C4BOMB"
 #define C4OFF 997521
@@ -18,6 +21,7 @@ new const g_szGameWeaponClassName[][] = { "", "", "", "weapon_scout", "", "", ""
 
 new const C4Sound[] = "zombieriot/plant.wav"
 new const C4Models[2][] = { "models/zombieriot/v_morec4.mdl", "models/zombieriot/x_morec4.mdl" }
+new const ExplosionSound[] = { "weapons/c4_explode1.wav" }
 
 new cvar_amount, cvar_damage, cvar_range, cvar_heamount, cvar_bulletrange, cvar_bulletdamage
 
@@ -65,12 +69,15 @@ public plugin_init()
 	cvar_heamount = register_cvar("zr_bomber_he_amount", "3")			//手雷数量
 	cvar_bulletrange = register_cvar("zr_bomber_bulletrange", "40.0")	//高爆子弹的伤害范围
 	cvar_bulletdamage = register_cvar("zr_bomber_bulletdamage", "8.0")	//高爆子弹的伤害
+
+	LibExplosion_Init();
 }
 
 public plugin_precache()
 {
 	engfunc(EngFunc_PrecacheSound, C4Sound)
 	engfunc(EngFunc_PrecacheModel, C4Models[0])
+	engfunc(EngFunc_PrecacheSound, ExplosionSound);
 	C4Index = engfunc(EngFunc_PrecacheModel, C4Models[1])
 	g_smodelindexfireball2 = engfunc(EngFunc_PrecacheModel, "sprites/eexplo.spr")
 	g_smodelindexfireball3 = engfunc(EngFunc_PrecacheModel, "sprites/fexplo.spr")
@@ -78,6 +85,8 @@ public plugin_precache()
 	SmokeIndex[1] = engfunc(EngFunc_PrecacheModel, "sprites/black_smoke2.spr")
 	SmokeIndex[2] = engfunc(EngFunc_PrecacheModel, "sprites/black_smoke3.spr")
 	SmokeIndex[3] = engfunc(EngFunc_PrecacheModel, "sprites/black_smoke4.spr")
+
+	LibExplosion_Precache();
 }
 
 public Message_TextMsg(msg_id, msg_dest, msg_entity)
@@ -159,7 +168,20 @@ public fw_PlayerPostThink(iPlayer)
 	if(pev(bEntity, pev_owner) != iEntity)
 	continue
 	
-	BombExplose(bEntity)
+	new Float:vecOrigin[3];
+	pev(bEntity, pev_origin, vecOrigin);
+	LibExplosion_RadiusDamage(iEntity, bEntity, vecOrigin, get_pcvar_float(cvar_range), get_pcvar_float(cvar_damage), true, 10.0, 300.0);
+
+	new Float:vecDir[3];
+	pev(bEntity, pev_v_angle, vecDir);
+	if (vector_length(vecDir) < 0.5)
+		xs_vec_set(vecDir, 0.0, 0.0, 1.0);
+	
+	LibExplosion_SetGlobalTrace(vecOrigin, vecDir);
+	LibExplosion_FullVFX();
+	emit_sound(bEntity, CHAN_STATIC, ExplosionSound, 1.2, 0.6, 0, random_num(92, 104));
+	
+	set_pev(bEntity, pev_flags, FL_KILLME);
 	}
 	return
 	}
@@ -366,72 +388,6 @@ public HAM_Touch_Post(iEntity, iPtd)
 	set_pev(iEntity, pev_iuser2, 0)
 	
 	engfunc(EngFunc_EmitSound, iEntity, CHAN_ITEM, C4Sound, 0.2, ATTN_NORM, 0, PITCH_NORM)
-}
-
-public BombExplose(iEntity)
-{
-	new iPlayer = get_pdata_cbase(pev(iEntity, pev_owner), 41, 4)
-	
-	new Float:origin[3]
-	pev(iEntity, pev_origin, origin)
-	
-	new i = -1
-	while((i = engfunc(EngFunc_FindEntityInSphere, i, origin, get_pcvar_float(cvar_range))) > 0)
-	{
-	if(!pev_valid(i) || iEntity == i)
-	continue
-	
-	if(pev(i, pev_takedamage) == DAMAGE_NO)
-	continue
-	
-	static classname[33]
-	pev(i, pev_classname, classname, charsmax(classname))
-	if(!strcmp(classname, "func_breakable"))
-	{
-	ExecuteHamB(Ham_TakeDamage, i, iPlayer, iPlayer, get_pcvar_float(cvar_damage), DMG_GENERIC)
-	continue
-	}
-	
-	new Float:origin2[3]
-	pev(i, pev_origin, origin2)
-	
-	new Float:damage = floatclamp(get_pcvar_float(cvar_damage)*(1.0-(get_distance_f(origin2, origin)-21.0)/get_pcvar_float(cvar_range)), 0.0, get_pcvar_float(cvar_damage))
-	if(damage == 0.0)
-	continue
-	
-	ExecuteHamB(Ham_TakeDamage, i, iPlayer, iPlayer, damage, DMG_GENERIC)
-	}
-	
-	new Float:Vec[3]
-	pev(iEntity, pev_v_angle, Vec)
-	xs_vec_mul_scalar(Vec, random_float(50.0, 55.0), Vec)
-	
-	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, origin, 0)
-	write_byte(TE_EXPLOSION)
-	engfunc(EngFunc_WriteCoord, origin[0]+Vec[0])
-	engfunc(EngFunc_WriteCoord, origin[1]+Vec[1])
-	engfunc(EngFunc_WriteCoord, origin[2]+Vec[2])
-	write_short(g_smodelindexfireball3)
-	write_byte(25)
-	write_byte(30)
-	write_byte(TE_EXPLFLAG_NOSOUND)
-	message_end()
-	
-	pev(iEntity, pev_v_angle, Vec)
-	xs_vec_mul_scalar(Vec, random_float(70.0, 95.0), Vec)
-	
-	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, origin, 0)
-	write_byte(TE_EXPLOSION)
-	engfunc(EngFunc_WriteCoord, origin[0]+Vec[0])
-	engfunc(EngFunc_WriteCoord, origin[1]+Vec[1])
-	engfunc(EngFunc_WriteCoord, origin[2]+Vec[2])
-	write_short(g_smodelindexfireball2)
-	write_byte(30)
-	write_byte(30)
-	write_byte(TE_EXPLFLAG_NONE)
-	message_end()
-	
-	set_pev(iEntity, pev_flags, FL_KILLME)
 }
 
 public CreateC4Bomb(iPlayer)
