@@ -7,6 +7,7 @@
 #include <xs>
 
 #include <offset>
+#include "Library/LibMath.inc"
 #include "Library/LibExplosion.sma"
 
 #define PLUGIN	"Zr Bomber"

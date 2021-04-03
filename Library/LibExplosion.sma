@@ -1,3 +1,12 @@
+/*
+
+Created Date: Apr 02 2021
+
+Modern Warfare Dev Team
+ - Luna the Reborn
+
+*/
+
 #define DMG_EXPLOSION		   (1<<24)
 
 #define FFADE_IN		0x0000		// Just here so we don't pass 0 into the function
@@ -88,10 +97,13 @@ stock LibExplosion_ResetResources()
 	g_sModelIndexFireball3  = engfunc(EngFunc_ModelIndex, "sprites/fexplo.spr");
 }
 
-stock LibExplosion_SetExploSprite(indexRaising, indexOnGround)
+stock LibExplosion_SetExploSprite(indexRaising = -1, indexOnGround = -1)
 {
-	g_iLawsSprIndex[lawspr_rocketexp] = indexRaising;
-	g_iLawsSprIndex[lawspr_rocketexp2] = indexOnGround;
+	if (indexRaising > 0)
+		g_iLawsSprIndex[lawspr_rocketexp] = indexRaising;
+
+	if (indexOnGround > 0)
+		g_iLawsSprIndex[lawspr_rocketexp2] = indexOnGround;
 }
 
 stock LibExplosion_RadiusDamage(iAttacker, iInflictor, const Float:vecOrigin[3], Float:flRadius, Float:flDamage)
@@ -259,27 +271,27 @@ stock LibExplosion_FullVFX(tr = 0)	// Use global TR.
 	
 	new Float:vecOrigin2[8][3], Float:vecOrigin3[21][3], Float:vecPosition[3];
 	xs_vec_copy(vecOrigin, vecPosition);
-	get_spherical_coord(vecPosition, 200.0, 20.0, 0.0, vecOrigin3[0]);
+	get_spherical_coord(vecPosition, 100.0, 20.0, 0.0, vecOrigin3[0]);
 	get_spherical_coord(vecPosition, 0.0, 100.0, 0.0, vecOrigin3[1]);
-	get_spherical_coord(vecPosition, 200.0, 100.0, 0.0, vecOrigin3[2]);
-	get_spherical_coord(vecPosition, 140.0, 120.0, 0.0, vecOrigin3[3]);
-	get_spherical_coord(vecPosition, 240.0, 20.0, 0.0, vecOrigin3[4]);
-	get_spherical_coord(vecPosition, 240.0, 65.0, 0.0, vecOrigin3[5]);
-	get_spherical_coord(vecPosition, 240.0, 110.0, 0.0, vecOrigin3[6]);
-	get_spherical_coord(vecPosition, 240.0, 155.0, 0.0, vecOrigin3[7]);
-	get_spherical_coord(vecPosition, 240.0, 200.0, 0.0, vecOrigin3[8]);
-	get_spherical_coord(vecPosition, 240.0, 245.0, 0.0, vecOrigin3[9]);
-	get_spherical_coord(vecPosition, 240.0, 290.0, 20.0, vecOrigin3[10]);
-	get_spherical_coord(vecPosition, 240.0, 335.0, 20.0, vecOrigin3[11]);
-	get_spherical_coord(vecPosition, 240.0, 40.0, 20.0, vecOrigin3[12]);
-	get_spherical_coord(vecPosition, 80.0, 120.0, 20.0, vecOrigin3[13]);
-	get_spherical_coord(vecPosition, 80.0, 110.0, 20.0, vecOrigin3[14]);
-	get_spherical_coord(vecPosition, 120.0, 110.0, 20.0, vecOrigin3[15]);
-	get_spherical_coord(vecPosition, 220.0, 40.0, 20.0, vecOrigin3[16]);
-	get_spherical_coord(vecPosition, 240.0, 30.0, 20.0, vecOrigin3[17]);
-	get_spherical_coord(vecPosition, 60.0, 130.0, 20.0, vecOrigin3[18]);
-	get_spherical_coord(vecPosition, 60.0, 125.0, 20.0, vecOrigin3[19]);
-	get_spherical_coord(vecPosition, 60.0, 120.0, 20.0, vecOrigin3[20]);
+	get_spherical_coord(vecPosition, 100.0, 100.0, 0.0, vecOrigin3[2]);
+	get_spherical_coord(vecPosition, 70.0, 120.0, 0.0, vecOrigin3[3]);
+	get_spherical_coord(vecPosition, 120.0, 20.0, 0.0, vecOrigin3[4]);
+	get_spherical_coord(vecPosition, 120.0, 65.0, 0.0, vecOrigin3[5]);
+	get_spherical_coord(vecPosition, 120.0, 110.0, 0.0, vecOrigin3[6]);
+	get_spherical_coord(vecPosition, 120.0, 155.0, 0.0, vecOrigin3[7]);
+	get_spherical_coord(vecPosition, 120.0, 200.0, 0.0, vecOrigin3[8]);
+	get_spherical_coord(vecPosition, 120.0, 245.0, 0.0, vecOrigin3[9]);
+	get_spherical_coord(vecPosition, 120.0, 290.0, 20.0, vecOrigin3[10]);
+	get_spherical_coord(vecPosition, 120.0, 335.0, 20.0, vecOrigin3[11]);
+	get_spherical_coord(vecPosition, 120.0, 40.0, 20.0, vecOrigin3[12]);
+	get_spherical_coord(vecPosition, 40.0, 120.0, 20.0, vecOrigin3[13]);
+	get_spherical_coord(vecPosition, 40.0, 110.0, 20.0, vecOrigin3[14]);
+	get_spherical_coord(vecPosition, 60.0, 110.0, 20.0, vecOrigin3[15]);
+	get_spherical_coord(vecPosition, 110.0, 40.0, 20.0, vecOrigin3[16]);
+	get_spherical_coord(vecPosition, 120.0, 30.0, 20.0, vecOrigin3[17]);
+	get_spherical_coord(vecPosition, 30.0, 130.0, 20.0, vecOrigin3[18]);
+	get_spherical_coord(vecPosition, 30.0, 125.0, 20.0, vecOrigin3[19]);
+	get_spherical_coord(vecPosition, 30.0, 120.0, 20.0, vecOrigin3[20]);
 	
 	for (new i = 0; i < 21; i++)
 	{
@@ -495,29 +507,24 @@ stock Float:GetAmountOfPlayerVisible(const Float:vecSrc[3], iEntity)
 	return retval;
 }
 
-stock FixedUnsigned16(Float:value, scale = (1<<12))
-{
-	new Float:output = value * float(scale);
-	if (output < 0.0)
-		output = 0.0;
-
-	if (output > float(0xFFFF))
-		output = float(0xFFFF);
-
-	return floatround(output);
-}
-
 stock bool:fm_is_user_same_team(index1, index2)
 {
 	return !!(get_pdata_int(index1, m_iTeam) == get_pdata_int(index2, m_iTeam));
 }
 
-stock get_spherical_coord(const Float:ent_origin[3], Float:redius, Float:level_angle, Float:vertical_angle, Float:origin[3])
+stock UTIL_RandomizeSmokeSprite()
 {
-	static Float:length;
-	length = redius * floatcos(vertical_angle, degrees);
-	
-	origin[0] = ent_origin[0] + length * floatcos(level_angle, degrees);
-	origin[1] = ent_origin[1] + length * floatsin(level_angle, degrees);
-	origin[2] = ent_origin[2] + redius * floatsin(vertical_angle, degrees);
+	switch (random_num(0, 2))
+	{
+		case 0:
+			return g_iLawsSprIndex[lawspr_smokespr];
+		
+		case 1:
+			return g_iLawsSprIndex[lawspr_smoke];
+		
+		case 2:
+			return g_iLawsSprIndex[lawspr_smoke2];
+	}
+
+	return 0;
 }
