@@ -1,0 +1,29 @@
+{
+	"name"		: "GetItemInfo",
+	"class"		: "CBasePlayerItem",
+	"library"	: "mod",
+	"arguments"	:
+	[
+		{
+			"type" : "ItemInfo *"
+		}
+	],
+	"return" : 
+	{
+		"type" : "int",
+		"info" : "Action successful."
+	},
+	"indexes" : 
+	[
+		{
+			"os"	: "windows",
+			"mod"   : "cstrike",
+			"value" : 61
+		},
+		{
+			"os"	: "linux",
+			"mod"   : "cstrike",
+			"value" : 63
+		}
+	]
+}

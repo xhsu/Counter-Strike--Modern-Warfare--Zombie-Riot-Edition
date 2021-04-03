@@ -1,0 +1,27 @@
+{
+    "name"    : "OnUpdate",
+    "class"   : "HostageFollowState",
+    "library" : "mod",
+	"arguments"   :
+	[
+		{
+			"type" : "CHostageImprov *",
+            "info" : "improv"
+		}
+	],
+    "identifiers" : 
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x83,0xEC,0x30,0x53,0x55,0x56,0x57,0x8B,0xF9,0x8D,0x5F,0x0C,0x8B,0xCB,0xE8,"*","*","*","*",0x85],
+			"info"  : "Build 8684"
+        },
+		{
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x83,0xEC,0x54,0x53,0x55,0x56,0x57,0x8B,0xF9,0x8D,0x5F,0x0C,0x8B,0xCB,0xE8,"*","*","*","*",0x85],
+			"info"  : "Build 3647"
+        }
+    ]
+}

@@ -1,0 +1,27 @@
+{
+    "name"      : "DropShield",
+	"class"     : "CBasePlayer",
+    "library"   : "mod",
+    "arguments" :
+    [
+		{
+            "type"  : "bool",
+            "info"  : "bDeploy"
+        }
+    ],
+    "identifiers":
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x90,0x83,0xEC,0x18,0x53,0x56,0x8B,0xF1,0x33,0xDB,0x38,0x9E,0xFB,0x07,0x00,0x00,0x0F,0x84,"*","*","*","*"],
+            "displacement" : 1
+        },
+		{
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x90,0x83,0xEC,0x24,0x53,0x56,0x8B,0xF1,0x33,0xDB,0x38,0x9E,0xFB,0x07,0x00,0x00,0x0F,0x84,"*","*","*","*",0x8B],
+            "displacement" : 1
+        }
+    ]
+}

@@ -11,7 +11,7 @@
 #include "Library/LibExplosion.sma"
 
 #define PLUGIN	"Zr Bomber"
-#define VERSION	"1.0.2"
+#define VERSION	"1.0.2 CSMW:ZR"
 #define AUTHOR	"DSHGFHDS & Luna"
 
 #define C4CLASSNAME "C4BOMB"

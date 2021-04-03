@@ -1,0 +1,15 @@
+[
+	{
+        "name"        : "m_leader",
+        "type"        : "edict_s *",
+        "memoryType"  : "data",
+        "identifiers" : 
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 12
+            }
+        ]
+    }
+]

@@ -1,0 +1,15 @@
+[
+    {
+        "name"        : "m_hostage",
+        "type"        : "CHostage *",
+        "memoryType"  : "data",
+        "identifiers" : 
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 20
+            }
+        ]
+    }
+]

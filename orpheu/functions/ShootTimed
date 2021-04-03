@@ -1,0 +1,52 @@
+{
+    "name"      : "ShootTimed",
+    "library"   : "mod",
+    "arguments" :
+    [
+        {
+            "type"  : "entvars_t *",
+            "info"  : "pevOwner"
+        },
+		{
+            "type"  : "float",
+            "info"  : "vecStart.x"
+        },
+		{
+            "type"  : "float",
+            "info"  : "vecStart.y"
+        },
+        {
+            "type"  : "float",
+            "info"  : "vecStart.z"
+        },
+        {
+            "type"  : "float",
+            "info"  : "vecVelocity.x"
+        },
+		{
+            "type"  : "float",
+            "info"  : "vecVelocity.y"
+        },
+        {
+            "type"  : "float",
+            "info"  : "vecVelocity.z"
+        },
+        {
+            "type"  : "float",
+            "info"  : "flFuseTime"
+        }
+    ],
+    "return" : 
+	{
+		"type" : "CGrenade *",
+		"info" : "Pointer to the spawned grenade."
+	},
+    "identifiers":
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x56,0x57,0xFF,0x15,"*","*","*","*",0x85,0xC0,0x75,"*",0x33,0xFF,0xEB,"*",0x8D],
+        }
+    ]
+}

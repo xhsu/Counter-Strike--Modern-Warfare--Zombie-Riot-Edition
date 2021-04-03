@@ -1,0 +1,47 @@
+{
+    "name"    : "HandleEnemyKill",
+    "class"   : "CCareerTaskManager",
+    "library" : "mod",
+	"arguments"   :
+	[
+		{
+			"type" : "bool",
+            "info" : "wasBlinded"
+		},
+		{
+			"type" : "char *",
+            "info" : "weaponName"
+		},
+        {
+			"type" : "bool",
+            "info" : "headshot"
+		},
+        {
+			"type" : "bool",
+            "info" : "killerHasShield"
+		},
+		{
+			"type" : "CBasePlayer *",
+            "info" : "pAttacker"
+		},
+        {
+			"type" : "CBasePlayer *",
+            "info" : "pVictim"
+		}
+	],
+    "identifiers" : 
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x51,0x53,0x55,0x56,0x8B,0x74,0x24,0x18,0x57,0x56,0x8B,0xF9,0xE8,"*","*","*","*",0x56],
+            "info"  : "Build 8684"
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x51,0x53,0x55,0x56,0x8B,0x74,0x24,0x18,0x57,0x8B,0xF9,0x56,0xE8,"*","*","*","*",0x56],
+            "info"  : "Build 3647"
+        }
+    ]
+}

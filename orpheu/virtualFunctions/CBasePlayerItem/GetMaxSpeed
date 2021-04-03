@@ -1,0 +1,23 @@
+{
+	"name"		: "GetMaxSpeed",
+	"class"		: "CBasePlayerItem",
+	"library"	: "mod",
+	"return" :	
+	{
+		"type" : "float",
+		"info" : "flSpeed"
+	},
+	"indexes" :
+	[
+		{
+			"os"	: "windows",
+			"mod"	: "cstrike",
+			"value"	: 78
+		},		
+		{
+			"os"	: "linux",
+			"mod"	: "cstrike",
+			"value"	: 80
+		}
+	] 
+} 

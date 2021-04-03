@@ -1,0 +1,49 @@
+{
+	"name"		: "KickBack",
+	"class"		: "CBasePlayerWeapon",
+	"library"	: "mod",
+	"arguments"	:
+	[
+		{
+			"type" : "float",
+			"info" : "up_base"
+		},
+		{
+			"type" : "float",
+			"info" : "lateral_base"
+		},
+		{
+			"type" : "float",
+			"info" : "up_modifier"
+		},
+		{
+			"type" : "float",
+			"info" : "lateral_modifier"
+		},
+		{
+			"type" : "float",
+			"info" : "up_max"
+		},
+		{
+			"type" : "float",
+			"info" : "lateral_max"
+		},
+		{
+			"type" : "int",
+			"info" : "direction_change"
+		}
+	],
+	"identifiers":
+	[
+		{
+			"os"	: "windows",
+			"mod"	: "cstrike",
+			"value"	: [0x51,0x56,0x8B,0xF1,0x8B,0x86,"*","*","*","*",0x83,0xF8,"*",0x89,0x44]
+		},
+		{
+			"os"	: "linux",
+			"mod"	: "cstrike",
+			"value"	: "KickBack__17CBasePlayerWeaponffffffi"
+		}
+	]
+}

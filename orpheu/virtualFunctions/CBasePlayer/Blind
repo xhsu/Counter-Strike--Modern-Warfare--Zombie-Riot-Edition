@@ -1,0 +1,32 @@
+{
+    "name" : "Blind",
+    "class" : "CBasePlayer",
+    "library" : "mod",
+    "arguments" : 
+    [
+		{
+            "type"  : "float",
+            "info"  : "blindTime"
+        },
+		{
+            "type"  : "float",
+            "info"  : "duration"
+        },
+		{
+            "type"  : "float",
+            "info"  : "holdTime"
+        },
+        {
+            "type"  : "int",
+            "info"  : "alpha"
+        }
+    ],
+    "indexes" : 
+    [
+        {
+            "os" : "windows",
+            "mod" : "cstrike",
+            "value" : 86
+        }
+    ]
+}

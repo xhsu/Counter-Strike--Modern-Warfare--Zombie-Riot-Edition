@@ -1,0 +1,19 @@
+{
+	"name" : "pfnForceUnmodified",
+	"library" : "engine",
+	"arguments" :
+	[
+		{
+			"type" : "int"
+		},
+		{
+			"type" : "Vector *"
+		},
+		{
+			"type" : "Vector *"
+		},
+		{
+			"type" : "const char *"
+		}
+	]
+}

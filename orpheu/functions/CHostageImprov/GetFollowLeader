@@ -1,0 +1,19 @@
+{
+    "name"    : "GetFollowLeader",
+    "class"   : "CHostageImprov",
+    "library" : "mod",
+	"return" :
+	{
+		"type" : "CBasePlayer *",
+        "info" : "Player whom hostages follow."
+	},
+    "identifiers" : 
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x90,0x90,0x90,0x8b,0x01,0x85,0xc0,0x74,"*",0x8b,0x50,0x04,0x56,0x8b,0x71,0x04,0x3b,0xd6,0x5e],
+			"displacement"	: 3
+        }
+    ]
+}
