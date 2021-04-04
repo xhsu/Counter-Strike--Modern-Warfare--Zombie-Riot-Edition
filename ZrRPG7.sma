@@ -1,4 +1,12 @@
 /* AMXX Template by Devzone */
+/*
+
+Created Date: Apr 03 2021
+
+Modern Warfare Dev Team
+ - Luna the Reborn
+
+*/
 
 #include <amxmodx>
 #include <fakemeta>
@@ -15,7 +23,7 @@
 #include "Library/LibProjectile.sma"
 
 #define PLUGIN		"RPG-7 for ZombieRiot"
-#define VERSION		"2.0 CSMW:ZR"
+#define VERSION		"2.0.1 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn"
 
 #define VMDL 			"models/v_rpg.mdl"			// view model
@@ -62,7 +70,7 @@ stock const Float:g_rgflRPG7AnimLength[ERPG7Anims] = { 20.0, 0.4667, 0.4667, 3.3
 new g_strViewModel = 0, g_strWorldModel = 0, g_strWorldEmptyModel = 0;
 new g_hHamBotRegisterFunction = 0;
 new bool:g_bKillIconHook[33];
-new cvar_maxammo, cvar_recoil, cvar_flyspeed, cvar_flyoffset, cvar_gravity, cvar_directdmg, cvar_rangedmg, cvar_radius;
+new cvar_maxammo, cvar_recoil, cvar_flyspeed, cvar_flyoffset, cvar_gravity, cvar_directdmg, cvar_rangedmg, cvar_radius, cvar_playerfxrad, cvar_shakedur, cvar_shakeamp, cvar_shakefreq, cvar_punchmax, cvar_knockvel;
 new g_indexRPG7Item;
 
 public plugin_init()
@@ -95,6 +103,12 @@ public plugin_init()
 	cvar_directdmg = register_cvar("RPG_ProjectileHitDamage", "120.0");
 	cvar_rangedmg = register_cvar("RPG_ExplosionDamage", "7000.0");
 	cvar_radius = register_cvar("RPG_ExplosionRadius", "350.0");
+	cvar_playerfxrad = register_cvar("RPG_ExplosionPlayerFXRadius", "700.0");
+	cvar_shakedur = register_cvar("RPG_ExplosionShakeDuration", "5.0");
+	cvar_shakeamp = register_cvar("RPG_ExplosionShakeAmplitude", "20.0");
+	cvar_shakefreq = register_cvar("RPG_ExplosionShakeFrequency", "10.0");
+	cvar_punchmax = register_cvar("RPG_ExplosionMaxiumPunchAngle", "25.0");
+	cvar_knockvel = register_cvar("RPG_ExplosionKnockbackMomentum", "400.0");
 
 	g_indexRPG7Item = zr_register_item("RPG-7 8000$", HUMAN, 1);
 	
@@ -404,11 +418,12 @@ public HamF_Touch(iEntity, iPtd)
 	pev(iEntity, pev_origin, vecOrigin);
 	LibExplosion_RadiusDamage(iPlayer, iEntity, vecOrigin, get_pcvar_float(cvar_radius), get_pcvar_float(cvar_rangedmg));
 	LibExplosion_FullVFX(LibProjectile_GetTR());
-	LibExplosion_PlayerFX(iEntity, vecOrigin, get_pcvar_float(cvar_radius) * 2.0,
-		5.0, 10.0, 20.0,	// Shake
+	LibExplosion_PlayerFX(iEntity, vecOrigin, get_pcvar_float(cvar_playerfxrad),
+		get_pcvar_float(cvar_shakedur), get_pcvar_float(cvar_shakefreq), get_pcvar_float(cvar_shakeamp),	// Shake [Dur, Freq, Amp]
 		0.25, 0.25,	// Fade
-		25.0,	// Punch
-		400.0);	// Knock
+		get_pcvar_float(cvar_punchmax),	// Punch
+		get_pcvar_float(cvar_knockvel)	// Knock
+	);
 
 	emit_sound(iEntity, CHAN_WEAPON, EXPLO_SFX, 1.2, 0.3, 0, random_num(90, 111));
 
