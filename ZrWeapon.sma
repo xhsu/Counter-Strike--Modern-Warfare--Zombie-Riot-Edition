@@ -20,13 +20,13 @@ Modern Warfare Dev Team
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Weapon"
-#define VERSION	"2.0 CSMW:ZR"
+#define VERSION	"2.1 CSMW:ZR"
 #define AUTHOR	"Luna the Reborn"
 
 stock const BOMBER_ID = 4;			//爆破者的ID
 
 new g_rgiWeaponIndices[sizeof WEAPON_CLASSNAME], g_rgiEquipmentIndices[EZRSpecialEquipments];
-new Float:g_rgflBotThink[33];
+new Float:g_rgflBotThink[33], g_rgiUpdateTimes[33];
 new cvar_despawningtime, cvar_armorperbuy, cvar_bombergrcap;
 
 public plugin_init()
@@ -65,6 +65,11 @@ public plugin_precache()
 	precache_sound("items/gunpickup1.wav");
 }
 
+public client_putinserver(iPlayer)
+{
+	g_rgiUpdateTimes[iPlayer] = 0;
+}
+
 public fw_SetModel_Post(iEntity, const szModel[])
 {
 	if (strlen(szModel) < 8)
@@ -83,6 +88,20 @@ public fw_SetModel_Post(iEntity, const szModel[])
 
 public fw_PlayerPostThink_Post(iPlayer)
 {
+	if (g_rgiUpdateTimes[iPlayer] < sizeof WEAPON_CLASSNAME)
+	{
+		new i = g_rgiUpdateTimes[iPlayer]++;
+
+		if (!strlen(WEAPON_CLASSNAME[i]))
+			goto LAB_CONTINUE_PLAYERPOSTTHINK;
+		
+		if (WEAPON_BPAMMO_INDEX[i] <= 0)
+			goto LAB_CONTINUE_PLAYERPOSTTHINK;
+
+		UTIL_WeaponList(iPlayer, i, WEAPON_CLASSNAME[i]);	// Just an update, due to we cannot hook original send of WeaponList message.
+	}
+
+LAB_CONTINUE_PLAYERPOSTTHINK:
 	if (pev(iPlayer, pev_deadflag) != DEAD_NO)
 		return;
 	
@@ -178,29 +197,14 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 			if (zr_get_human_id(iPlayer) == BOMBER_ID)	// Increased capacity.
 				iMaxGrenade = get_pcvar_num(cvar_bombergrcap);
 
-			if (pev(iPlayer, pev_weapons) & (1<<i))	// Special treatment for these three.
+			if (GiveGrenade(iPlayer, i, iMaxGrenade))
 			{
-				if (iCurGrenade >= iMaxGrenade)
-				{
-					client_print(iPlayer, print_center, "%s已補滿(上限為%d個), 無法繼續購買!", WEAPON_NAME[i], iMaxGrenade);
-					return;
-				}
-
-				set_pdata_int(iPlayer, m_rgAmmo[iAmmoId], ++iCurGrenade);
+				iCurGrenade = get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]);	// Refresh data.
 
 				UTIL_AmmoPickup(iPlayer, m_rgAmmo[iAmmoId], 1);
 				zr_print_chat(iPlayer, GREENCHAT, "%s庫存: %d/%d", WEAPON_NAME[i], iCurGrenade, iMaxGrenade);
 				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/gunpickup1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
-				zr_set_user_money(iPlayer, iMoney - WEAPON_ZR_COST[i], true);
-				return;
-			}
-			else if (iCurGrenade > 0)	// You have inventory, but have no access to the item. Hmmm..
-				set_pdata_int(iPlayer, m_rgAmmo[iAmmoId], 0);
-			
-			if (GiveItem(iPlayer, WEAPON_CLASSNAME[i]) > 0)
-			{
-				zr_print_chat(iPlayer, GREENCHAT, "%s庫存: %d/%d", WEAPON_NAME[i], 1, iMaxGrenade);
 				zr_set_user_money(iPlayer, iMoney - WEAPON_ZR_COST[i], true);
 			}
 
@@ -306,6 +310,60 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/kevlar.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
 		return;
+	}
+}
+
+public zr_human_finish(iTimes)
+{
+	switch (iTimes)
+	{
+		case 1:
+		{
+			for (new iPlayer = 1; iPlayer <= global_get(glb_maxClients); iPlayer++)
+			{
+				if (zr_is_user_zombie(iPlayer))
+					continue;
+
+				GiveGrenade(iPlayer, CSW_FLASHBANG, zr_get_human_id(iPlayer) == BOMBER_ID ? get_pcvar_num(cvar_bombergrcap) : -1);
+				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/gunpickup1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+
+				zr_print_chat(iPlayer, GREENCHAT, "取得完成獎勵: %s", WEAPON_NAME[CSW_FLASHBANG]);
+			}
+		}
+
+		case 2:
+		{
+			for (new iPlayer = 1; iPlayer <= global_get(glb_maxClients); iPlayer++)
+			{
+				if (zr_is_user_zombie(iPlayer))
+					continue;
+
+				new iWeapon = get_pdata_cbase(iPlayer, m_pActiveItem);
+				new iSlot = ExecuteHamB(Ham_Item_ItemSlot, iWeapon);
+
+				if (iSlot == 1 || iSlot == 2)
+				{
+					ReplenishAmmunition(iPlayer, iWeapon);
+					engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+
+					zr_print_chat(iPlayer, GREENCHAT, "取得完成獎勵: %s", ZR_EQUIPMENT_NAME[BUY_ZR_EQP_CUR_BPAMMO]);
+				}
+			}
+		}
+
+		case 3:
+		{
+			for (new iPlayer = 0; iPlayer <= global_get(glb_maxClients); iPlayer++)
+			{
+				if (zr_is_user_zombie(iPlayer))
+					continue;
+
+				ReplenishAmmunition(iPlayer);
+				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+
+				zr_print_chat(iPlayer, GREENCHAT, "取得完成獎勵: %s", ZR_EQUIPMENT_NAME[BUY_ZR_EQP_ALL_BPAMMO]);
+			}
+		}
 	}
 }
 

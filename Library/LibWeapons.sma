@@ -88,7 +88,7 @@ enum _:AMMO_LIST
 	AMMO_C4,
 };
 
-stock const AMMO_MAX_CAPACITY[] = { -1, 30, 90, 200, 90, 32, 100, 100, 35, 52, 120, 2, 1, 1, 1 };
+stock const AMMO_MAX_CAPACITY[] = { -1, 60, 180, 200, 180, 64, 200, 200, 70, 104, 240, 2, 1, 1, 1 };
 stock const AMMO_TYPE[][] = { "", "338Magnum", "762Nato", "556NatoBox", "556Nato", "buckshot", "45ACP", "57mm", "50AE", "357SIG", "9mm", "Flashbang", "HEGrenade", "SmokeGrenade", "C4" };
 stock const AMMO_CLASSNAME[][] = { "", "ammo_338magnum", "ammo_762nato", "ammo_556natobox", "ammo_556nato", "ammo_buckshot", "ammo_45acp", "ammo_57mm", "ammo_50ae", "ammo_357sig", "ammo_9mm" };
 stock const AMMO_NAME[][] = { "", ".338馬格南", "7.62mm北約", "5.56mm北約(盒裝)", "5.56mm北約", "鹿彈", "柯特自動手槍彈", "5.7mm", ".50AE", ".357SIG", "9mm巴拉貝魯姆", "閃光彈", "高爆手橊彈", "急凍手橊彈", "C4炸藥包" };
@@ -352,6 +352,31 @@ stock GiveItem(iPlayer, const szClassname[], iSpecialCode = 0)
 	
 	engfunc(EngFunc_RemoveEntity, iEntity);
 	return -1;
+}
+
+stock bool:GiveGrenade(iPlayer, iId, iMaxGrenade = -1, iSpecialCode = 0)
+{
+	new iAmmoId = WEAPON_BPAMMO_INDEX[iId];
+	new iCurGrenade = get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]);
+
+	if (iMaxGrenade < 0)
+		iMaxGrenade = AMMO_MAX_CAPACITY[iAmmoId];
+
+	if (pev(iPlayer, pev_weapons) & (1<<iId))	// Grenade entity will stay with player even if the ammo was depleted. However, the HUD will hide in that case.
+	{
+		if (iCurGrenade >= iMaxGrenade)
+		{
+			client_print(iPlayer, print_center, "%s已補滿(上限為%d個), 無法繼續購買!", WEAPON_NAME[iId], iMaxGrenade);
+			return false;
+		}
+
+		set_pdata_int(iPlayer, m_rgAmmo[iAmmoId], ++iCurGrenade);
+		return true;
+	}
+	else if (iCurGrenade > 0)	// You have inventory, but have no access to the item. Hmmm..
+		set_pdata_int(iPlayer, m_rgAmmo[iAmmoId], 0);
+
+	return !!(GiveItem(iPlayer, WEAPON_CLASSNAME[iId], iSpecialCode) > 0);
 }
 
 stock GetItemIdByArmoury(iArmouryIndex)
