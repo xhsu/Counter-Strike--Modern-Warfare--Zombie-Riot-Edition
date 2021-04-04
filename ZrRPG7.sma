@@ -23,7 +23,7 @@ Modern Warfare Dev Team
 #include "Library/LibProjectile.sma"
 
 #define PLUGIN		"RPG-7 for ZombieRiot"
-#define VERSION		"2.0.1 CSMW:ZR"
+#define VERSION		"2.0.2 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn"
 
 #define VMDL 			"models/v_rpg.mdl"			// view model
@@ -110,7 +110,7 @@ public plugin_init()
 	cvar_punchmax = register_cvar("RPG_ExplosionMaxiumPunchAngle", "25.0");
 	cvar_knockvel = register_cvar("RPG_ExplosionKnockbackMomentum", "400.0");
 
-	g_indexRPG7Item = zr_register_item("RPG-7 8000$", HUMAN, 1);
+	g_indexRPG7Item = zr_register_item("RPG-7 \y8000", HUMAN, 4);
 	
 	for (new e = 0; e < sizeof g_szTanks; e ++)
 		RegisterHam(Ham_Use, g_szTanks[e], "HamF_Use_Post", 1);
@@ -185,7 +185,7 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 
 		new szNetName[64];
 		pev(iPlayer, pev_netname, szNetName,charsmax(szNetName));
-		zr_print_chat(0, GREENCHAT, "玩家%s购买了一把RPG-7反坦克火箭炮。", szNetName);
+		zr_print_chat(0, GREENCHAT, "%s购买了一把RPG-7反坦克火箭炮", szNetName);
 	}
 }
 
