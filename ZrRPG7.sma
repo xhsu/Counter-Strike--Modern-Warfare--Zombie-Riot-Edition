@@ -185,7 +185,7 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 
 		new szNetName[64];
 		pev(iPlayer, pev_netname, szNetName,charsmax(szNetName));
-		zr_print_chat(0, GREENCHAT, "本应该拿出祖先的盾牌和长剑战斗的%s，在猛喝了一口伏特加以后，嚷着俄语用RPG-7炸烂了旁边一只僵尸。", szNetName);
+		zr_print_chat(0, GREENCHAT, "玩家%s购买了一把RPG-7反坦克火箭炮。", szNetName);
 	}
 }
 
