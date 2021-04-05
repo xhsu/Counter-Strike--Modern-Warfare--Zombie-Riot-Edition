@@ -215,6 +215,12 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 			return;
 		}
 
+		if (HasWeapon(iPlayer, i))
+		{
+			client_print(iPlayer, print_center, "你已經有一把%s了!", WEAPON_NAME[i]);
+			return;
+		}
+
 		DropFirearmIfNecessary(iPlayer);
 
 		if (GiveItem(iPlayer, WEAPON_CLASSNAME[i]) > 0)
@@ -239,6 +245,13 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 		ReplenishAmmunition(iPlayer);
 		zr_set_user_money(iPlayer, iMoney - ZR_EQUIPMENT_COST[BUY_ZR_EQP_ALL_BPAMMO], true);
 
+		new iEntity = -1;
+		if ((iEntity = HasWeapon(iPlayer, CSW_M3)) > 0)
+		{
+			if (pev(iEntity, pev_weapons) == RPG7_SPECIAL_CODE)
+				ReplenishRPG7Rockets(iPlayer, iEntity, get_cvar_num("RPG_MaxAmmo"));
+		}
+
 		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 		return;
 	}
@@ -258,7 +271,11 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 			return;
 		}
 
-		ReplenishAmmunition(iPlayer, iWeapon);
+		if (pev(iWeapon, pev_weapons) == RPG7_SPECIAL_CODE)
+			ReplenishRPG7Rockets(iPlayer, iWeapon, get_cvar_num("RPG_MaxAmmo"));
+		else
+			ReplenishAmmunition(iPlayer, iWeapon);
+
 		zr_set_user_money(iPlayer, iMoney - ZR_EQUIPMENT_COST[BUY_ZR_EQP_CUR_BPAMMO], true);
 
 		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
@@ -348,7 +365,11 @@ public zr_human_finish(iTimes)
 
 				if (iSlot == 1 || iSlot == 2)
 				{
-					ReplenishAmmunition(iPlayer, iWeapon);
+					if (pev(iWeapon, pev_weapons) == RPG7_SPECIAL_CODE)
+						ReplenishRPG7Rockets(iPlayer, iWeapon, get_cvar_num("RPG_MaxAmmo"));
+					else
+						ReplenishAmmunition(iPlayer, iWeapon);
+
 					engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
 					zr_print_chat(iPlayer, GREENCHAT, "取得完成獎勵: %s", ZR_EQUIPMENT_NAME[BUY_ZR_EQP_CUR_BPAMMO]);
@@ -362,6 +383,13 @@ public zr_human_finish(iTimes)
 			{
 				if (zr_is_user_zombie(iPlayer))
 					continue;
+
+				new iEntity = -1;
+				if ((iEntity = HasWeapon(iPlayer, CSW_M3)) > 0)
+				{
+					if (pev(iEntity, pev_weapons) == RPG7_SPECIAL_CODE)
+						ReplenishRPG7Rockets(iPlayer, iEntity, get_cvar_num("RPG_MaxAmmo"));
+				}
 
 				ReplenishAmmunition(iPlayer);
 				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);

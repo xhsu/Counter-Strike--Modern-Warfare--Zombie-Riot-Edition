@@ -23,7 +23,7 @@ Modern Warfare Dev Team
 #include "Library/LibProjectile.sma"
 
 #define PLUGIN		"RPG-7 for ZombieRiot"
-#define VERSION		"2.0.2 CSMW:ZR"
+#define VERSION		"2.0.3 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn"
 
 #define VMDL 			"models/v_rpg.mdl"			// view model
@@ -35,7 +35,6 @@ Modern Warfare Dev Team
 #define EXPLO_SFX		"weapons/rocke_explode.wav"
 #define HUD				"weapon_rpg"				// hud txt
 #define KILLICON		"rpg"
-#define SPECIAL_CODE	25476238					// a random number, fill whatever you like
 
 #define BUY_COMMAND		"getrpg7"
 #define ROCKET_NAME		"rpg7_rocket"
@@ -137,6 +136,7 @@ public plugin_precache()
 	
 	register_clcmd(BUY_COMMAND, "Command_GiveWeapon");
 	register_clcmd(HUD, "Command_HookSelectWeapon");
+	register_clcmd("updateammo", "Command_UpdateRPGAmmo");
 
 	LibExplosion_Precache();
 	LibExplosion_SetExploSprite(_, precache_model("sprites/m79grenadeex.spr"));
@@ -157,15 +157,21 @@ public Command_GiveWeapon(iPlayer)
 	if (!is_user_alive(iPlayer))
 		return;
 	
-	DropWeapons(iPlayer, WEAPON_SLOT);
+	DropFirearmIfNecessary(iPlayer);
 	
-	new iEntity = GiveItem(iPlayer, WEAPON_ENT, SPECIAL_CODE);
+	new iEntity = GiveItem(iPlayer, WEAPON_ENT, RPG7_SPECIAL_CODE);
 	if (pev_valid(iEntity) != 2)
 		return;
-	
+
 	set_pdata_int(iEntity, m_iClip, 1);
-	set_pdata_int(iPlayer, m_rgAmmo[get_pdata_int(iEntity, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON)], get_pcvar_num(cvar_maxammo));
-	UTIL_WeaponList(iPlayer, WEAPON_CSW, HUD, get_pcvar_num(cvar_maxammo));
+	ReplenishRPG7Rockets(iPlayer, iEntity, get_pcvar_num(cvar_maxammo));
+}
+
+public Command_UpdateRPGAmmo(iPlayer)
+{
+	new iEntity = get_pdata_cbase(iPlayer, m_pActiveItem);
+
+	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_RPG_ROCKET, get_pdata_int(iEntity, m_iRocketBpammo, XO_CBASEPLAYERWEAPON));
 }
 
 public zr_item_event(iPlayer, iItemIndex, iSlot)
@@ -195,18 +201,16 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 
 public HamF_Item_AddToPlayer_Post(iEntity, iPlayer)
 {
-	if (pev(iEntity, pev_weapons) == SPECIAL_CODE)
-		UTIL_WeaponList(iPlayer, WEAPON_CSW, HUD);
+	if (pev(iEntity, pev_weapons) == RPG7_SPECIAL_CODE)
+		UTIL_WeaponList(iPlayer, WEAPON_CSW, HUD, get_pcvar_num(cvar_maxammo), WEAPON_SLOT, AMMO_RPG_ROCKET);
 }
 
 public HamF_Item_Deploy_Post(iEntity)
 {
-	if (pev(iEntity, pev_weapons) == SPECIAL_CODE)
+	if (pev(iEntity, pev_weapons) == RPG7_SPECIAL_CODE)
 	{
 		new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, XO_CBASEPLAYERITEM);
 		new iClip = get_pdata_int(iEntity, m_iClip, XO_CBASEPLAYERWEAPON);
-		new iAmmoType = get_pdata_int(iEntity, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
-		new iAmmo = get_pdata_int(iPlayer, m_rgAmmo[iAmmoType]);
 		
 		set_pev(iPlayer, pev_viewmodel, g_strViewModel);
 		set_pev(iPlayer, pev_weaponmodel, iClip > 0 ? g_strWorldModel : g_strWorldEmptyModel);
@@ -214,23 +218,20 @@ public HamF_Item_Deploy_Post(iEntity)
 		if (iClip > 1)
 			set_pdata_int(iEntity, m_iClip, 1);
 		
-		if (iAmmo > get_pcvar_num(cvar_maxammo))
-			set_pdata_int(iPlayer, m_rgAmmo[iAmmoType], get_pcvar_num(cvar_maxammo));
-		
 		UTIL_WeaponAnim(iPlayer, iClip > 0 ? draw : draw_none);
 		UTIL_ForceWeaponAnim(iPlayer, iEntity, g_rgflRPG7AnimLength[iClip > 0 ? draw : draw_none]);
+		UTIL_UpdateBpAmmoCount(iPlayer, AMMO_RPG_ROCKET, get_pdata_int(iEntity, m_iRocketBpammo, XO_CBASEPLAYERWEAPON));
 	}
 }
 
 public HamF_Item_PostFrame(iEntity)
 {
-	if (pev(iEntity, pev_weapons) != SPECIAL_CODE)
+	if (pev(iEntity, pev_weapons) != RPG7_SPECIAL_CODE)
 		return HAM_IGNORED;
 	
 	new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, XO_CBASEPLAYERITEM);
 	new iClip = get_pdata_int(iEntity, m_iClip, XO_CBASEPLAYERWEAPON);
-	new iAmmoType = get_pdata_int(iEntity, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
-	new iAmmo = get_pdata_int(iPlayer, m_rgAmmo[iAmmoType]);
+	new iAmmo = get_pdata_int(iEntity, m_iRocketBpammo, XO_CBASEPLAYERWEAPON);
 	new bitsButtonPressed = get_pdata_int(iPlayer, m_afButtonPressed);
 
 	if (get_pdata_int(iEntity, m_fInReload, XO_CBASEPLAYERWEAPON))
@@ -243,7 +244,9 @@ public HamF_Item_PostFrame(iEntity)
 			iAmmo--;
 
 			set_pdata_int(iEntity, m_iClip, iClip, XO_CBASEPLAYERWEAPON);
-			set_pdata_int(iPlayer, m_rgAmmo[iAmmoType], iAmmo);
+			set_pdata_int(iEntity, m_iRocketBpammo, iAmmo, XO_CBASEPLAYERWEAPON);
+
+			UTIL_UpdateBpAmmoCount(iPlayer, AMMO_RPG_ROCKET, iAmmo);
 		}
 	}
 	else if (get_pdata_float(iEntity, m_flNextPrimaryAttack, XO_CBASEPLAYERWEAPON) <= 0.0 && bitsButtonPressed & IN_ATTACK)
@@ -336,7 +339,7 @@ public fw_SetModel(iEntity, szModel[])
 	if (pev_valid(iWeapon) != 2)
 		return FMRES_IGNORED;
 	
-	if (pev(iWeapon, pev_weapons) != SPECIAL_CODE)
+	if (pev(iWeapon, pev_weapons) != RPG7_SPECIAL_CODE)
 		return FMRES_IGNORED;
 
 	engfunc(EngFunc_SetModel, iEntity, get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON) ? XMDL : XMDL_EMPTY);
@@ -354,7 +357,7 @@ public fw_UpdateClientData_Post(iPlayer, iSendWeapon, hClientData)
 	if (pev_valid(iEntity) != 2)
 		return;
 	
-	if (pev(iEntity, pev_weapons) != SPECIAL_CODE)
+	if (pev(iEntity, pev_weapons) != RPG7_SPECIAL_CODE)
 		return;
 	
 	if (get_pdata_float(iPlayer, m_flNextAttack) <= 0.0)
@@ -376,7 +379,7 @@ public HamF_Use_Post(iEntity, id, iActivator, iUseType)
 		return;
 	
 	new iWeapon = get_pdata_cbase(id, m_pActiveItem);
-	if (pev_valid(iWeapon) != 2 ||  pev(iWeapon, pev_weapons) != SPECIAL_CODE)
+	if (pev_valid(iWeapon) != 2 ||  pev(iWeapon, pev_weapons) != RPG7_SPECIAL_CODE)
 		return;
 	
 	set_pev(id, pev_viewmodel, g_strViewModel);

@@ -137,6 +137,14 @@ enum _:ArmorType
 stock const ZR_EQUIPMENT_NAME[][] = { "當前武器彈藥", "所有武器彈藥", "護甲", "夜視鏡" };
 stock const ZR_EQUIPMENT_COST[] = { 1000, 2000, 100, 2500 };
 
+//
+// All Know special weapon codes.
+//
+#define M32_SPECIAL_CODE		52020
+#define GAUSS_SPECIAL_CODE		167235
+#define CROSSBOW_SPECIAL_CODE	164112
+#define RPG7_SPECIAL_CODE		25476238
+
 stock LibWeapons_Init()
 {
 	g_pfn_CBP_DropShield = OrpheuGetFunction("DropShield", "CBasePlayer");
@@ -183,7 +191,29 @@ stock GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoType)
 		{
 			if (get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON) == iAmmoType)
 			{
-				iAmmoBuffer += max(0, WEAPON_MAXCLIP[get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM)] - get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON));
+				switch (pev(iWeapon, pev_weapons))
+				{
+					case RPG7_SPECIAL_CODE:
+					{
+						// Do nothing. It does not count.
+					}
+					case M32_SPECIAL_CODE:
+					{
+						iAmmoBuffer += max(0, get_cvar_num("m32_clip") - get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON));
+					}
+					case GAUSS_SPECIAL_CODE:
+					{
+						iAmmoBuffer += max(0, get_cvar_num("gauss_clip") - get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON));
+					}
+					case CROSSBOW_SPECIAL_CODE:
+					{
+						iAmmoBuffer += max(0, get_cvar_num("crossbow_clip") - get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON));
+					}
+					default:
+					{
+						iAmmoBuffer += max(0, WEAPON_MAXCLIP[get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM)] - get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON));
+					}
+				}
 			}
 
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
@@ -249,7 +279,10 @@ stock ReplenishAmmunition(iPlayer, iWeapon = -1)
 	}
 }
 
-stock bool:HasWeapon(iPlayer, iId)
+/*
+	Return entity index if found.
+*/
+stock HasWeapon(iPlayer, iId)
 {
 	for (new i = 1; i < sizeof m_rgpPlayerItems; i++)
 	{
@@ -258,13 +291,13 @@ stock bool:HasWeapon(iPlayer, iId)
 		while (pev_valid(iWeapon) == 2)
 		{
 			if (get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM) == iId)
-				return true;
+				return iWeapon;
 
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
 		}
 	}
 
-	return false;
+	return 0;
 }
 
 stock DropWeapons(iPlayer, iSlot)
@@ -528,6 +561,27 @@ stock CountFirearms(iPlayer, &iWeaponCounts, iSlotCounts[])
 	}
 }
 
+//
+// From ZrRPG7.sma
+//
+#define m_iRocketBpammo		9	// Don't use offset 8 within ReGameDLL-CS!
+#define AMMO_RPG_ROCKET		15	// Create a fake ammo type. Starting from AMMO_C4 == 14.
+
+stock ReplenishRPG7Rockets(iPlayer, iEntity, iAmount)
+{
+	new iOldAmmo = get_pdata_int(iEntity, m_iRocketBpammo, XO_CBASEPLAYERWEAPON);
+
+	set_pdata_int(iEntity, m_iRocketBpammo, iAmount, XO_CBASEPLAYERWEAPON);
+	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_RPG_ROCKET, iAmount);
+
+	if (iAmount - iOldAmmo > 0)
+		UTIL_AmmoPickup(iPlayer, AMMO_RPG_ROCKET, iAmount - iOldAmmo);
+}
+
+
+//
+// Message stocks
+//
 #define ITEM_FLAG_SELECTONEMPTY		1
 #define ITEM_FLAG_NOAUTORELOAD		2
 #define ITEM_FLAG_NOAUTOSWITCHEMPTY	4
@@ -590,8 +644,20 @@ stock UTIL_AmmoPickup(iPlayer, iAmmoId, iAmount)
 	if (!gmsgAmmoPickup)
 		gmsgAmmoPickup = get_user_msgid("AmmoPickup");
 
-	message_begin(MSG_ONE_UNRELIABLE, gmsgAmmoPickup, _, iPlayer);
-	write_byte(iAmmoId);
-	write_byte(iAmount);
-	message_end();
+	emessage_begin(MSG_ONE_UNRELIABLE, gmsgAmmoPickup, _, iPlayer);
+	ewrite_byte(iAmmoId);
+	ewrite_byte(iAmount);
+	emessage_end();
+}
+
+stock UTIL_UpdateBpAmmoCount(iPlayer, iAmmoId, iAmount)
+{
+	static gmsgAmmoX;
+	if (!gmsgAmmoX)
+		gmsgAmmoX = get_user_msgid("AmmoX");
+
+	emessage_begin(MSG_ONE, gmsgAmmoX, _, iPlayer);
+	ewrite_byte(iAmmoId);
+	ewrite_byte(iAmount);
+	emessage_end();
 }
