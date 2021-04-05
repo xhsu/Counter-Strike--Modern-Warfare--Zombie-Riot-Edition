@@ -263,7 +263,7 @@ stock ReplenishAmmunition(iPlayer, iWeapon = -1)
 	}
 
 	// Replenish every weapon.
-	for (new i = 0; i < 2; i++)	// Only do it for primary and pistol.
+	for (new i = 0; i <= 2; i++)	// Only do it for primary and pistol.
 	{
 		iWeapon = get_pdata_cbase(iPlayer, m_rgpPlayerItems[i], XO_CBASEPLAYER);
 
