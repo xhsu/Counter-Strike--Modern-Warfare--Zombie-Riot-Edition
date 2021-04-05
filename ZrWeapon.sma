@@ -20,7 +20,7 @@ Modern Warfare Dev Team
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Weapon"
-#define VERSION	"2.1.1 CSMW:ZR"
+#define VERSION	"2.1.2 CSMW:ZR"
 #define AUTHOR	"Luna the Reborn"
 
 stock const BOMBER_ID = 4;			//爆破者的ID
@@ -205,7 +205,7 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 			{
 				iCurGrenade = get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]);	// Refresh data.
 
-				UTIL_AmmoPickup(iPlayer, m_rgAmmo[iAmmoId], 1);
+				UTIL_AmmoPickup(iPlayer, iAmmoId, 1);
 				zr_print_chat(iPlayer, GREENCHAT, "%s庫存: %d/%d", WEAPON_NAME[i], iCurGrenade, iMaxGrenade);
 				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/gunpickup1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
@@ -329,6 +329,7 @@ public zr_human_finish(iTimes)
 					continue;
 
 				GiveGrenade(iPlayer, CSW_FLASHBANG, zr_get_human_id(iPlayer) == BOMBER_ID ? get_pcvar_num(cvar_bombergrcap) : -1);
+				UTIL_AmmoPickup(iPlayer, AMMO_Flashbang, 1);
 				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/gunpickup1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
 				zr_print_chat(iPlayer, GREENCHAT, "取得完成獎勵: %s", WEAPON_NAME[CSW_FLASHBANG]);
@@ -380,7 +381,7 @@ BuildAffordableWeaponList(iMoney, iSlot, rgIndices[], &iCount)
 		if (iMoney < WEAPON_ZR_COST[i])
 			continue;
 			
-		if (iSlot > 0 && WEAPON_SLOT[i] != (iSlot - 1))	// Start from 0.
+		if (iSlot > 0 && WEAPON_SLOT[i] != iSlot)
 			continue;
 			
 		iCount++;

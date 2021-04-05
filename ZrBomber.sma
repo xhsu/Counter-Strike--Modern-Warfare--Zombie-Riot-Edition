@@ -9,25 +9,23 @@
 #include <offset>
 #include "Library/LibMath.inc"
 #include "Library/LibExplosion.sma"
+#include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Bomber"
-#define VERSION	"1.0.2 CSMW:ZR"
+#define VERSION	"1.0.3 CSMW:ZR"
 #define AUTHOR	"DSHGFHDS & Luna"
 
 #define C4CLASSNAME "C4BOMB"
 #define C4OFF 997521
 
-new const g_szGameWeaponClassName[][] = { "", "", "", "weapon_scout", "", "", "", "", "weapon_aug", "", "", "", "", "weapon_sg550", "weapon_galil", "weapon_famas", "", "", "weapon_awp", "", "weapon_m249", "", "weapon_m4a1", "", "weapon_g3sg1", "", "", "weapon_sg552", "weapon_ak47", "",
-	"" }
-
 new const C4Sound[] = "zombieriot/plant.wav"
 new const C4Models[2][] = { "models/zombieriot/v_morec4.mdl", "models/zombieriot/x_morec4.mdl" }
 new const ExplosionSound[] = { "weapons/c4_explode1.wav" }
 
-new cvar_amount, cvar_damage, cvar_range, cvar_heamount, cvar_bulletrange, cvar_bulletdamage
+new cvar_amount, cvar_damage, cvar_range, cvar_bulletrange, cvar_bulletdamage, cvar_grenadecapacity;
 
 new Mode[33], Float:NextThink[33], Firing[33], bool:FixHoldTime[33]
-new C4Index, g_smodelindexfireball2, g_smodelindexfireball3, SmokeIndex[4]
+new C4Index, SmokeIndex[4]
 
 new C4Id
 new const C4Name[] = "C4炸药"	//名称
@@ -54,12 +52,13 @@ public plugin_init()
 	RegisterHam(Ham_Item_Holster, "weapon_c4", "HAM_ItemHolster_Post", 1)
 	RegisterHam(Ham_Spawn, "weapon_c4", "HAM_Spawn_Post", 1)
 	RegisterHam(Ham_Touch, "info_target", "HAM_Touch_Post", 1)
-	for(new i = 1; i < sizeof g_szGameWeaponClassName; i++)
+	for (new i = 1; i < sizeof WEAPON_CLASSNAME; i++)
 	{
-	if(!g_szGameWeaponClassName[i][0])
-	continue
-	RegisterHam(Ham_Weapon_PrimaryAttack, g_szGameWeaponClassName[i], "HAM_Weapon_PrimaryAttack")
-	RegisterHam(Ham_Weapon_PrimaryAttack, g_szGameWeaponClassName[i], "HAM_Weapon_PrimaryAttack_Post", 1)
+		if (WEAPON_SLOT[i] != PRIMARY_WEAPON_SLOT && WEAPON_SLOT[i] != PISTOL_SLOT)	// Filter non-ballistic weapon.
+			continue;
+
+		RegisterHam(Ham_Weapon_PrimaryAttack, WEAPON_CLASSNAME[i], "HamF_Weapon_PrimaryAttack");
+		RegisterHam(Ham_Weapon_PrimaryAttack, WEAPON_CLASSNAME[i], "HamF_Weapon_PrimaryAttack_Post", true);
 	}
 	static C4Info[64]
 	formatex(C4Info, charsmax(C4Info), "%s %d$", C4Name, C4Cost)
@@ -67,7 +66,6 @@ public plugin_init()
 	cvar_amount = register_cvar("zr_bomber_c4_amount", "3")				//C4数量
 	cvar_damage = register_cvar("zr_bomber_c4_damage", "500.0")			//C4伤害
 	cvar_range = register_cvar("zr_bomber_c4_range", "300.0")			//C4伤害范围
-	cvar_heamount = register_cvar("zr_bomber_he_amount", "3")			//手雷数量
 	cvar_bulletrange = register_cvar("zr_bomber_bulletrange", "40.0")	//高爆子弹的伤害范围
 	cvar_bulletdamage = register_cvar("zr_bomber_bulletdamage", "8.0")	//高爆子弹的伤害
 
@@ -80,8 +78,6 @@ public plugin_precache()
 	engfunc(EngFunc_PrecacheModel, C4Models[0])
 	engfunc(EngFunc_PrecacheSound, ExplosionSound);
 	C4Index = engfunc(EngFunc_PrecacheModel, C4Models[1])
-	g_smodelindexfireball2 = engfunc(EngFunc_PrecacheModel, "sprites/eexplo.spr")
-	g_smodelindexfireball3 = engfunc(EngFunc_PrecacheModel, "sprites/fexplo.spr")
 	SmokeIndex[0] = engfunc(EngFunc_PrecacheModel, "sprites/black_smoke1.spr")
 	SmokeIndex[1] = engfunc(EngFunc_PrecacheModel, "sprites/black_smoke2.spr")
 	SmokeIndex[2] = engfunc(EngFunc_PrecacheModel, "sprites/black_smoke3.spr")
@@ -256,7 +252,7 @@ public HAM_C4_PrimaryAttack(iEntity)
 	new iPlayer = get_pdata_cbase(iEntity, 41, 4)
 	
 	set_pdata_float(iEntity, 46, 0.9, 4)
-	SendWeaponAnim(iPlayer, 1)
+	UTIL_WeaponAnim(iPlayer, 1)
 	
 	new Float:fCurTime
 	global_get(glb_time, fCurTime)
@@ -267,7 +263,7 @@ public HAM_C4_PrimaryAttack(iEntity)
 	return HAM_SUPERCEDE
 }
 
-public HAM_Weapon_PrimaryAttack(iEntity)
+public HamF_Weapon_PrimaryAttack(iEntity)
 {
 	new iPlayer = get_pdata_cbase(iEntity, 41, 4)
 	
@@ -293,7 +289,7 @@ public HAM_Weapon_PrimaryAttack(iEntity)
 	return FMRES_IGNORED
 }
 
-public HAM_Weapon_PrimaryAttack_Post(iEntity)
+public HamF_Weapon_PrimaryAttack_Post(iEntity)
 {
 	new iPlayer = get_pdata_cbase(iEntity, 41, 4)
 	if(Firing[iPlayer] != 1)
@@ -323,7 +319,7 @@ public HAM_Weapon_WeaponIdle(iEntity)
 	return HAM_IGNORED
 	
 	set_pdata_float(iEntity, 46, 0.9, 4)
-	SendWeaponAnim(iPlayer, 2)
+	UTIL_WeaponAnim(iPlayer, 2)
 	
 	new Float:fCurTime
 	global_get(glb_time, fCurTime)
@@ -341,7 +337,7 @@ public HAM_ItemDeploy_Post(iEntity)
 	set_pev(iPlayer, pev_viewmodel2, C4Models[0])
 	set_pev(iPlayer, pev_weaponmodel2, C4Models[1])
 	
-	SendWeaponAnim(iPlayer, 3)
+	UTIL_WeaponAnim(iPlayer, 3)
 	
 	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("AmmoX"), {0, 0, 0 }, iPlayer)
 	write_byte(14)
@@ -495,7 +491,7 @@ public BulletExplosion(iPlayer, iTrace)
 	if(!is_user_alive(i))
 	continue
 	
-	screen_shake(i, -3.0, 0.2, 5.0)
+	UTIL_ScreenShake(i, 0.2, 5.0, -3.0);
 	}
 }
 
@@ -550,65 +546,41 @@ public zr_item_event(iPlayer, item, Slot)
 
 public zr_being_human(iPlayer)
 {
-	if(zr_get_human_id(iPlayer) != BomberID)
-	return
+	if (!cvar_grenadecapacity)
+		cvar_grenadecapacity = get_cvar_pointer("zr_bomber_grenade_capacity");
 	
-	fm_give_item(iPlayer, "weapon_hegrenade")
-	set_pdata_int(iPlayer, 388, get_pcvar_num(cvar_heamount), 5)
-	
-	new iEntity = fm_give_item(iPlayer, "weapon_c4")
-	
-	if(!pev_valid(iEntity) || !(iEntity = get_pdata_cbase(iPlayer, 372, 4)))
-	return
-	
-	set_pev(iEntity, pev_iuser4, get_pcvar_num(cvar_amount))
-	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("AmmoX"), {0, 0, 0 }, iPlayer)
-	write_byte(14)
-	write_byte(get_pcvar_num(cvar_amount))
-	message_end()
-}
+	new iBomberCapacity = get_pcvar_num(cvar_grenadecapacity);
 
-stock fm_give_item(iPlayer, const wEntity[])
-{
-	new iEntity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, wEntity))
-	new Float:origin[3]
-	pev(iPlayer, pev_origin, origin)
-	set_pev(iEntity, pev_origin, origin)
-	set_pev(iEntity, pev_spawnflags, pev(iEntity, pev_spawnflags) | SF_NORESPAWN)
-	dllfunc(DLLFunc_Spawn, iEntity)
-	new save = pev(iEntity, pev_solid)
-	dllfunc(DLLFunc_Touch, iEntity, iPlayer)
-	if(pev(iEntity, pev_solid) != save)
-	return iEntity
-	engfunc(EngFunc_RemoveEntity, iEntity)
-	return -1
-}
+	if (zr_get_human_id(iPlayer) != BomberID)	// Restore capacity info.
+	{
+		UTIL_WeaponList(iPlayer, CSW_HEGRENADE, WEAPON_CLASSNAME[CSW_HEGRENADE]);
+		UTIL_WeaponList(iPlayer, CSW_SMOKEGRENADE, WEAPON_CLASSNAME[CSW_SMOKEGRENADE]);
+		UTIL_WeaponList(iPlayer, CSW_FLASHBANG, WEAPON_CLASSNAME[CSW_FLASHBANG]);
 
-stock SendWeaponAnim(iPlayer, iAnim)
-{
-	set_pev(iPlayer, pev_weaponanim, iAnim)
-	message_begin(MSG_ONE_UNRELIABLE, SVC_WEAPONANIM, {0, 0, 0}, iPlayer)
-	write_byte(iAnim)
-	write_byte(pev(iPlayer, pev_body))
-	message_end()
-}
-
-stock get_aim_origin_vector(iPlayer, Float:forw, Float:right, Float:up, Float:vStart[])
-{
-	new Float:vOrigin[3], Float:vAngle[3], Float:vForward[3], Float:vRight[3], Float:vUp[3]
+		return;
+	}
+	else
+	{
+		UTIL_WeaponList(iPlayer, CSW_HEGRENADE, WEAPON_CLASSNAME[CSW_HEGRENADE], iBomberCapacity);
+		UTIL_WeaponList(iPlayer, CSW_SMOKEGRENADE, WEAPON_CLASSNAME[CSW_SMOKEGRENADE], iBomberCapacity);
+		UTIL_WeaponList(iPlayer, CSW_FLASHBANG, WEAPON_CLASSNAME[CSW_FLASHBANG], iBomberCapacity);
+	}
 	
-	pev(iPlayer, pev_origin, vOrigin)
-	pev(iPlayer, pev_view_ofs, vUp)
-	xs_vec_add(vOrigin, vUp, vOrigin)
-	pev(iPlayer, pev_v_angle, vAngle)
+	for (new i = 0; i < iBomberCapacity; i++)
+		GiveGrenade(iPlayer, CSW_HEGRENADE, iBomberCapacity);
 	
-	angle_vector(vAngle, ANGLEVECTOR_FORWARD, vForward)
-	angle_vector(vAngle, ANGLEVECTOR_RIGHT, vRight)
-	angle_vector(vAngle, ANGLEVECTOR_UP, vUp)
+	UTIL_AmmoPickup(iPlayer, AMMO_HEGrenade, iBomberCapacity);
+	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/gunpickup1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 	
-	vStart[0] = vOrigin[0] + vForward[0] * forw + vRight[0] * right + vUp[0] * up
-	vStart[1] = vOrigin[1] + vForward[1] * forw + vRight[1] * right + vUp[1] * up
-	vStart[2] = vOrigin[2] + vForward[2] * forw + vRight[2] * right + vUp[2] * up
+	new iEntity = GiveItem(iPlayer, "weapon_c4");
+	if (pev_valid(iEntity) != 2 || !(iEntity = get_pdata_cbase(iPlayer, m_rgpPlayerItems[C4_SLOT])))
+		return;
+	
+	set_pev(iEntity, pev_iuser4, get_pcvar_num(cvar_amount));
+	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("AmmoX"), _, iPlayer);
+	write_byte(AMMO_C4);
+	write_byte(get_pcvar_num(cvar_amount));
+	message_end();
 }
 
 stock get_speed_vector(const Float:origin1[3], const Float:origin2[3], Float:speed, Float:new_velocity[3])
@@ -616,13 +588,4 @@ stock get_speed_vector(const Float:origin1[3], const Float:origin2[3], Float:spe
 	xs_vec_sub(origin2, origin1, new_velocity)
 	new Float:num = floatsqroot(speed*speed / (new_velocity[0]*new_velocity[0] + new_velocity[1]*new_velocity[1] + new_velocity[2]*new_velocity[2]))
 	xs_vec_mul_scalar(new_velocity, num, new_velocity)
-}
-
-stock screen_shake(iPlayer, Float:amplitude, Float:duration, Float:frequency)
-{
-	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("ScreenShake"), _, iPlayer)
-	write_short(floatround(4096.0*amplitude))
-	write_short(floatround(4096.0*duration))
-	write_short(floatround(4096.0*frequency))
-	message_end()
 }

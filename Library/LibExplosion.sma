@@ -396,14 +396,14 @@ stock UTIL_ScreenShake(iPlayer, Float:flDuration, Float:flFrequence, Float:flAmp
 	message_begin(MSG_ONE_UNRELIABLE, gmsgShake, _, iPlayer);
 	write_short(FixedUnsigned16(flAmplitude, 1<<12));	// amplitude
 	write_short(FixedUnsigned16(flDuration, 1<<12));	// duration
-	write_short(FixedUnsigned16(flFrequence, 1<<8));	// frequency
+	write_short(FixedUnsigned16(flFrequence, 1<<12));	// frequency
 	message_end();
 }
 
 stock UTIL_ScreenFade(iPlayer, Float:flDuration, Float:flHoldTime, bitsFlags, r, g, b, a)
 {
 	message_begin(MSG_ONE_UNRELIABLE, gmsgFade, _, iPlayer);
-	write_short(FixedUnsigned16(flDuration, 1<<12));// duration
+	write_short(FixedUnsigned16(flDuration, 1<<12));	// duration
 	write_short(FixedUnsigned16(flHoldTime, 1<<12));	// hold time
 	write_short(bitsFlags);	// flags
 	write_byte(r);	// r
