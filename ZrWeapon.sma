@@ -20,7 +20,7 @@ Modern Warfare Dev Team
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Weapon"
-#define VERSION	"2.1 CSMW:ZR"
+#define VERSION	"2.1.1 CSMW:ZR"
 #define AUTHOR	"Luna the Reborn"
 
 stock const BOMBER_ID = 4;			//爆破者的ID
@@ -53,9 +53,9 @@ public plugin_init()
 		g_rgiWeaponIndices[i] = zr_register_item(szText, HUMAN, WEAPON_ZR_BUYSLOT[i]);
 	}
 
-	cvar_despawningtime = register_cvar("zr_weaponbox_despawn_time", "120.0")	// How long should it stays before removed?
-	cvar_armorperbuy = register_cvar("zr_armorgain_per_buy", "100");
-	cvar_bombergrcap = register_cvar("zr_bomber_grenade_capacity", "3");
+	cvar_despawningtime = register_cvar("zr_weaponbox_despawn_time", "120.0")	// 掉落的武器經過多長時間會被刪除？
+	cvar_armorperbuy = register_cvar("zr_armorgain_per_buy", "100");			// 每次購買護甲的量？
+	cvar_bombergrcap = register_cvar("zr_bomber_grenade_capacity", "3");		// 爆破手榴彈的上限？
 }
 
 public plugin_precache()
@@ -72,6 +72,10 @@ public client_putinserver(iPlayer)
 
 public fw_SetModel_Post(iEntity, const szModel[])
 {
+	new Float:flDespawnTime = get_pcvar_float(cvar_despawningtime);
+	if (flDespawnTime <= 0.0)
+		return;
+
 	if (strlen(szModel) < 8)
 		return;
 
@@ -83,7 +87,7 @@ public fw_SetModel_Post(iEntity, const szModel[])
 	if (strcmp(szClassName, "weaponbox"))
 		return;
 
-	set_pev(iEntity, pev_nextthink, get_gametime() + get_pcvar_float(cvar_despawningtime));
+	set_pev(iEntity, pev_nextthink, get_gametime() + flDespawnTime);
 }
 
 public fw_PlayerPostThink_Post(iPlayer)
