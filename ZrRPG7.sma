@@ -23,7 +23,7 @@ Modern Warfare Dev Team
 #include "Library/LibProjectile.sma"
 
 #define PLUGIN		"RPG-7 for ZombieRiot"
-#define VERSION		"2.0.3 CSMW:ZR"
+#define VERSION		"2.0.4 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn"
 
 #define VMDL 			"models/v_rpg.mdl"			// view model
@@ -258,7 +258,7 @@ public HamF_Item_PostFrame(iEntity)
 
 			UTIL_WeaponAnim(iPlayer, shoot1);
 			UTIL_ForceWeaponAnim(iPlayer, iEntity, g_rgflRPG7AnimLength[shoot1]);
-			emit_sound(iPlayer, CHAN_WEAPON, LAUNCH_SFX, 1.0, ATTN_NORM, 0, PITCH_NORM);
+			emit_sound(iPlayer, CHAN_STATIC, LAUNCH_SFX, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
 			new Float:vecRocketOrigin[3];
 			get_aim_origin_vector(iPlayer, 32.0, 4.0, 1.0, vecRocketOrigin);
@@ -281,7 +281,7 @@ public HamF_Item_PostFrame(iEntity)
 			LibProjectile_AddContrail(iRocket, g_iLawsSprIndex[lawspr_smoketrail], get_pcvar_float(cvar_flyspeed));
 			LibProjectile_AddFlare(iRocket);
 			LibProjectile_RocketLaunchVFX(vecRocketOrigin, vecPlayerOrigin, vecPlayerVAngle, g_iLawsSprIndex[lawspr_fire], g_iLawsSprIndex[lawspr_smokespr]);
-			emit_sound(iRocket, CHAN_STATIC, TRAVEL_SFX, 1.0, 0.5, 0, random_num(94, 102));
+			emit_sound(iRocket, CHAN_STATIC, TRAVEL_SFX, VOL_NORM, 0.5, 0, random_num(94, 102));
 			KickBack(iEntity, get_pcvar_float(cvar_recoil), 0.0, get_pcvar_float(cvar_recoil), get_pcvar_float(cvar_recoil) * 0.3, get_pcvar_float(cvar_recoil), get_pcvar_float(cvar_recoil) * 0.3, 2);
 
 			pev(iPlayer, pev_velocity, vecVel);
@@ -396,13 +396,16 @@ public HamF_TakeDamage(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamag
 	if (strcmp(szClassName, ROCKET_NAME))
 		return HAM_IGNORED;
 	
-	g_bKillIconHook[iAttacker] = true;
+	if (0 < iAttacker < sizeof g_bKillIconHook)
+		g_bKillIconHook[iAttacker] = true;
+
 	return HAM_IGNORED;
 }
 
 public HamF_TakeDamage_Post(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamageTypes)
 {
-	g_bKillIconHook[iAttacker] = false;
+	if (0 < iAttacker < sizeof g_bKillIconHook)
+		g_bKillIconHook[iAttacker] = false;
 }
 
 public HamF_Touch(iEntity, iPtd)
@@ -428,7 +431,7 @@ public HamF_Touch(iEntity, iPtd)
 		get_pcvar_float(cvar_knockvel)	// Knock
 	);
 
-	emit_sound(iEntity, CHAN_WEAPON, EXPLO_SFX, 1.2, 0.3, 0, random_num(90, 111));
+	emit_sound(iEntity, CHAN_STATIC, EXPLO_SFX, VOL_NORM, 0.3, 0, random_num(90, 111));
 
 	UTIL_SoftRemoval(iEntity);
 	return HAM_SUPERCEDE;

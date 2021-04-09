@@ -182,7 +182,7 @@ public fw_PlayerPostThink(iPlayer)
 		25.0,	// Punch
 		400.0);	// Knock
 
-	emit_sound(bEntity, CHAN_STATIC, ExplosionSound, 1.2, 0.6, 0, random_num(92, 104));
+	engfunc(EngFunc_EmitSound, bEntity, CHAN_STATIC, ExplosionSound, VOL_NORM, 0.4, 0, random_num(92, 104));
 
 	set_pev(bEntity, pev_flags, FL_KILLME);
 	}
@@ -390,7 +390,7 @@ public HAM_Touch_Post(iEntity, iPtd)
 	set_pev(iEntity, pev_movetype, MOVETYPE_NONE)
 	set_pev(iEntity, pev_iuser2, 0)
 	
-	engfunc(EngFunc_EmitSound, iEntity, CHAN_ITEM, C4Sound, 0.2, ATTN_NORM, 0, PITCH_NORM)
+	engfunc(EngFunc_EmitSound, iEntity, CHAN_ITEM, C4Sound, 0.2, ATTN_STATIC, 0, PITCH_NORM)
 }
 
 public CreateC4Bomb(iPlayer)

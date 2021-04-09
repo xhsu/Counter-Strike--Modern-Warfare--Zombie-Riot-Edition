@@ -1,4 +1,3 @@
-
 /*
 
 Created Date: Apr 03 2021
@@ -180,7 +179,7 @@ stock LibProjectile_RocketFlyingVFX(const Float:vecOrigin[3], iFlameSprite, iSmo
 	message_end();
 }
 
-stock LibProjectile_DirectHit(iEntity, Float:flDamage)
+stock LibProjectile_DirectHit(iEntity, Float:flDamage, bitsDamageTypes = DMG_CLUB)
 {
 	pev(iEntity, pev_origin, _s_vecOrigin);
 	get_aim_origin_vector(iEntity, 10.0, 0.0, 0.0, _s_vecVelocity);
@@ -197,7 +196,7 @@ stock LibProjectile_DirectHit(iEntity, Float:flDamage)
 		return;
 
 	new iAttacker = pev(iEntity, pev_owner);
-	ExecuteHamB(Ham_TraceAttack, iVictim, iAttacker, flDamage, _s_vForward, _s_lp_tr, DMG_CLUB);
+	ExecuteHamB(Ham_TraceAttack, iVictim, iAttacker, flDamage, _s_vForward, _s_lp_tr, bitsDamageTypes);
 	OrpheuCallSuper(g_pfn_ApplyMultiDamage, iEntity, iAttacker);
 }
 
