@@ -3,130 +3,129 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
+#include <celltrie>
+#include <offset>
 
-#define PLUGIN "DSHGFHDS"
-#define VERSION "1.0"
-#define AUTHOR "ZOOM"
+#define PLUGIN	"Zoom"
+#define VERSION	"2.0"
+#define AUTHOR	"DSHGFHDS, Luna"
 
-new Float:g_fLastThink[33]
-new const gunname[][] = { "weapon_awp", "weapon_scout", "weapon_g3sg1", "weapon_sg550" }
+stock const g_szSupportedWeapon[][] = { "weapon_awp", "weapon_scout", "weapon_g3sg1", "weapon_sg550" };
+stock const SNIPER_RIFLES = (1<<CSW_AWP)|(1<<CSW_SCOUT)|(1<<CSW_G3SG1)|(1<<CSW_SG550);
+new Trie:g_hTrie = Invalid_Trie;
+new g_szEntityIndex[8];
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	register_event("CurWeapon", "Event_CurWeapon", "be", "1=1")
-	register_forward(FM_CmdStart, "fw_CmdStart")
-	for(new i = 0; i < 4; i++) RegisterHam(Ham_Spawn, gunname[i], "fw_WeaponSpawn_Post", 1)
-	register_clcmd("zoomin", "gunzoomin")
-	register_clcmd("zoomout", "gunzoomout")
+
+	register_forward(FM_RemoveEntity, "fw_RemoveEntity_Post", true);
+
+	for (new i = 0; i < sizeof g_szSupportedWeapon; i++)
+	{
+		RegisterHam(Ham_Spawn, g_szSupportedWeapon[i], "HamF_Spawn_Post", true);
+		RegisterHam(Ham_Weapon_SecondaryAttack, g_szSupportedWeapon[i], "HamF_Weapon_SecondaryAttack");
+	}
+
+	register_clcmd("zoomin", "Command_ZoomIn");
+	register_clcmd("zoomout", "Command_ZoomOut");
+
+	g_hTrie = TrieCreate();
 }
 
-public Event_CurWeapon(iPlayer)
+public HamF_Spawn_Post(iEntity)
 {
-	new iEntity = get_pdata_cbase(iPlayer, 373)
-	if(iEntity <= 0)
-	return PLUGIN_CONTINUE
+	num_to_str(iEntity, g_szEntityIndex, charsmax(g_szEntityIndex));
+
+	TrieSetCell(g_hTrie, g_szEntityIndex, 40);
+}
+
+public fw_RemoveEntity_Post(iEntity)
+{
+	num_to_str(iEntity, g_szEntityIndex, charsmax(g_szEntityIndex));
+
+	TrieDeleteKey(g_hTrie, g_szEntityIndex);
+}
+
+public HamF_Weapon_SecondaryAttack(iEntity)
+{
+	new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, XO_CBASEPLAYERITEM);
+	if (pev_valid(iPlayer) != 2)
+		return HAM_IGNORED;
 	
-	new iWeapon = get_pdata_int(iEntity, 43, 4)
-	if(iWeapon != CSW_AWP && iWeapon != CSW_SCOUT && iWeapon != CSW_G3SG1 && iWeapon != CSW_SG550)
+	new iFOV = get_pdata_int(iPlayer, m_iFOV, XO_CBASEPLAYER);
+	if (iFOV <= 40)
 	{
-	client_cmd(iPlayer, "bind MWHEELDOWN invnext")
-	client_cmd(iPlayer, "bind MWHEELUP invprev")
-	return PLUGIN_CONTINUE
-	}
-	
-	if(get_pdata_int(iPlayer, 363, 5) >= 90)
-	{
-	client_cmd(iPlayer, "bind MWHEELDOWN invnext")
-	client_cmd(iPlayer, "bind MWHEELUP invprev")
+		iFOV = 90;
 	}
 	else
 	{
-	client_cmd(iPlayer,"bind MWHEELUP zoomin")
-	client_cmd(iPlayer,"bind MWHEELDOWN zoomout")
+		num_to_str(iEntity, g_szEntityIndex, charsmax(g_szEntityIndex));
+		TrieGetCell(g_hTrie, g_szEntityIndex, iFOV);
 	}
+
+	set_pdata_float(iEntity, m_flNextSecondaryAttack, 0.3, XO_CBASEPLAYERWEAPON);
 	
-	return PLUGIN_CONTINUE
+	set_pdata_int(iPlayer, m_iFOV, iFOV, XO_CBASEPLAYER);
+	set_pev(iPlayer, pev_fov, float(iFOV));
+
+	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "weapons/zoom.wav", 0.2, 2.4, 0, 100);
+
+	return HAM_SUPERCEDE;
 }
 
-public fw_WeaponSpawn_Post(iEntity)
+public Command_ZoomIn(iPlayer)
 {
-	set_pev(iEntity, pev_weapons, 40);
-}
-
-public fw_CmdStart(iPlayer, uc_handle, seed)
-{
-	if(!is_user_alive(iPlayer))
-	return FMRES_IGNORED
-	
-	new iEntity = get_pdata_cbase(iPlayer, 373)
-	if(iEntity <= 0)
-	return FMRES_IGNORED
-	
-	new iWeapon = get_pdata_int(iEntity, 43, 4)
-	if(iWeapon != CSW_AWP && iWeapon != CSW_SCOUT && iWeapon != CSW_G3SG1 && iWeapon != CSW_SG550)
-	return FMRES_IGNORED
-
-	new button = get_uc(uc_handle, UC_Buttons)
-	new oldbutton = pev(iPlayer, pev_oldbuttons)
-	
-	if(!(button & IN_ATTACK2))
-	return FMRES_IGNORED
-	
-	button &= ~IN_ATTACK2
-	set_uc(uc_handle, UC_Buttons, button)
-	
-	if(oldbutton & IN_ATTACK2)
-	return FMRES_IGNORED
-	
-	if(get_pdata_float(iPlayer, 83, 5) > 0 || get_pdata_float(iEntity, 46, 4) > 0)
-	return FMRES_IGNORED
-
-	new Float:fCurTime
-	global_get(glb_time, fCurTime)
-	
-	if(fCurTime < g_fLastThink[iPlayer])
-	return FMRES_IGNORED
-	
-	g_fLastThink[iPlayer] = fCurTime + 0.25
-	if(get_pdata_int(iPlayer, 363, 5) >= 90) set_pdata_int(iPlayer, 363, pev(iEntity, pev_weapons), 5)
-	else set_pdata_int(iPlayer, 363, 90, 5)
-	
-	return FMRES_IGNORED
-}
-
-public gunzoomin(iPlayer)
-{
-	new iEntity = get_pdata_cbase(iPlayer, 373)
-	if(iEntity <= 0)
-	return
-	
-	new iWeapon = get_pdata_int(iEntity, 43, 4)
-	if(iWeapon != CSW_AWP && iWeapon != CSW_SCOUT && iWeapon != CSW_G3SG1 && iWeapon != CSW_SG550)
-	return
-	
-	if(pev(iEntity, pev_weapons) > 10 && pev(iEntity, pev_weapons) <= 40)
-	{
-	set_pev(iEntity, pev_weapons, pev(iEntity, pev_weapons)-3)
-	set_pdata_int(iPlayer, 363, pev(iEntity, pev_weapons), 5)
-	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "weapons/zoom.wav", 0.20, 2.40, 0, 100)
-	}
-}
-
-public gunzoomout(iPlayer)
-{
-	new iEntity = get_pdata_cbase(iPlayer, 373)
+	new iEntity = get_pdata_cbase(iPlayer, m_pActiveItem, XO_CBASEPLAYER);
 	if (iEntity <= 0)
-	return
+		return PLUGIN_HANDLED;
 	
-	new iWeapon = get_pdata_int(iEntity, 43, 4)
-	if(iWeapon != CSW_AWP && iWeapon != CSW_SCOUT && iWeapon != CSW_G3SG1 && iWeapon != CSW_SG550)
-	return
+	new iId = get_pdata_int(iEntity, m_iId, XO_CBASEPLAYERITEM);
+	if (!((1<<iId) & SNIPER_RIFLES))
+		return PLUGIN_HANDLED;
+
+	new iFOV = 0;
+	num_to_str(iEntity, g_szEntityIndex, charsmax(g_szEntityIndex));
+	if (!TrieGetCell(g_hTrie, g_szEntityIndex, iFOV))
+		return PLUGIN_HANDLED;
+
+	if (iFOV < 10 || iFOV > 40)
+		return PLUGIN_HANDLED;
 	
-	if(pev(iEntity, pev_weapons) < 40)
-	{
-	set_pev(iEntity, pev_weapons, pev(iEntity, pev_weapons)+3)
-	set_pdata_int(iPlayer, 363, pev(iEntity, pev_weapons), 5)
-	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "weapons/zoom.wav", 0.20, 2.40, 0, 100)
-	}
+	iFOV = clamp(iFOV - 3, 10, 40);
+	TrieSetCell(g_hTrie, g_szEntityIndex, iFOV);
+	set_pdata_int(iPlayer, m_iFOV, iFOV, XO_CBASEPLAYER);
+	set_pev(iPlayer, pev_fov, float(iFOV));
+
+	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "weapons/zoom.wav", 0.2, 2.4, 0, 100);
+
+	return PLUGIN_HANDLED;
+}
+
+public Command_ZoomOut(iPlayer)
+{
+	new iEntity = get_pdata_cbase(iPlayer, m_pActiveItem, XO_CBASEPLAYER);
+	if (iEntity <= 0)
+		return PLUGIN_HANDLED;
+	
+	new iId = get_pdata_int(iEntity, m_iId, XO_CBASEPLAYERITEM);
+	if (!((1<<iId) & SNIPER_RIFLES))
+		return PLUGIN_HANDLED;
+	
+	new iFOV = 0;
+	num_to_str(iEntity, g_szEntityIndex, charsmax(g_szEntityIndex));
+	if (!TrieGetCell(g_hTrie, g_szEntityIndex, iFOV))
+		return PLUGIN_HANDLED;
+
+	if (iFOV < 10 || iFOV > 40)
+		return PLUGIN_HANDLED;
+	
+	iFOV = clamp(iFOV + 3, 10, 40);
+	TrieSetCell(g_hTrie, g_szEntityIndex, iFOV);
+	set_pdata_int(iPlayer, m_iFOV, iFOV, XO_CBASEPLAYER);
+	set_pev(iPlayer, pev_fov, float(iFOV));
+
+	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "weapons/zoom.wav", 0.2, 2.4, 0, 100);
+
+	return PLUGIN_HANDLED;
 }
