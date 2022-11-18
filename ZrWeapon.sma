@@ -12,7 +12,6 @@ Modern Warfare Dev Team
 #include <fakemeta>
 #include <hamsandwich>
 #include <offset>
-#include <orpheu>
 #include <zombieriot>
 
 #include <cstrike_pdatas/pdatas_stocks>
@@ -342,6 +341,9 @@ public zr_human_finish(iTimes)
 		{
 			for (new iPlayer = 1; iPlayer <= global_get(glb_maxClients); iPlayer++)
 			{
+				if (!is_user_connected(iPlayer))
+					continue;
+
 				if (zr_is_user_zombie(iPlayer))
 					continue;
 
@@ -357,6 +359,9 @@ public zr_human_finish(iTimes)
 		{
 			for (new iPlayer = 1; iPlayer <= global_get(glb_maxClients); iPlayer++)
 			{
+				if (!is_user_connected(iPlayer))
+					continue;
+
 				if (zr_is_user_zombie(iPlayer))
 					continue;
 
@@ -381,6 +386,9 @@ public zr_human_finish(iTimes)
 		{
 			for (new iPlayer = 0; iPlayer <= global_get(glb_maxClients); iPlayer++)
 			{
+				if (!is_user_connected(iPlayer))
+					continue;
+
 				if (zr_is_user_zombie(iPlayer))
 					continue;
 
