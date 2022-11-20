@@ -1839,7 +1839,7 @@ public fw_TraceLine(Float:vecStart[3], Float:vecEnd[3], iConditions, iPlayer, iT
 	
 	new iWeapon = get_pdata_cbase(iPlayer, 373, 5)
 	
-	if (pev_valid(iWeapon) != 2)
+	if (iWeapon <= 0)
 		return FMRES_IGNORED;
 	
 	if(get_pdata_int(iWeapon, 43, 4) != CSW_KNIFE)

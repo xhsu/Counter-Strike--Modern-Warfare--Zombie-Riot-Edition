@@ -26,7 +26,6 @@ new cvar_amount, cvar_damage, cvar_range, cvar_bulletrange, cvar_bulletdamage, c
 
 new Mode[33], Float:NextThink[33], Firing[33], bool:FixHoldTime[33]
 new C4Index, SmokeIndex[4]
-new gmsgWeaponList, gmsgAmmoX;
 
 new C4Id
 new const C4Name[] = "C4炸药"	//名称
@@ -69,8 +68,6 @@ public plugin_init()
 	cvar_range = register_cvar("zr_bomber_c4_range", "300.0")			//C4伤害范围
 	cvar_bulletrange = register_cvar("zr_bomber_bulletrange", "40.0")	//高爆子弹的伤害范围
 	cvar_bulletdamage = register_cvar("zr_bomber_bulletdamage", "8.0")	//高爆子弹的伤害
-	gmsgWeaponList = get_user_msgid("WeaponList");
-	gmsgAmmoX = get_user_msgid("AmmoX");
 
 	LibExplosion_Init();
 }
@@ -341,11 +338,7 @@ public HAM_ItemDeploy_Post(iEntity)
 	set_pev(iPlayer, pev_weaponmodel2, C4Models[1])
 	
 	UTIL_WeaponAnim(iPlayer, 3)
-	
-	message_begin(MSG_ONE_UNRELIABLE, gmsgAmmoX, {0, 0, 0 }, iPlayer)
-	write_byte(14)
-	write_byte(pev(iEntity, pev_iuser4))
-	message_end()
+	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_C4, pev(iEntity, pev_iuser4));
 }
 
 public HAM_ItemHolster_Post(iEntity) Mode[get_pdata_cbase(iEntity, 41, 4)] = 0
@@ -404,10 +397,7 @@ public CreateC4Bomb(iPlayer)
 	
 	new Amount = pev(bEntity, pev_iuser4)-1
 	set_pev(bEntity, pev_iuser4, Amount)
-	message_begin(MSG_ONE_UNRELIABLE, gmsgAmmoX, {0, 0, 0 }, iPlayer)
-	write_byte(14)
-	write_byte(Amount)
-	message_end()
+	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_C4, Amount);
 	
 	new Float:origin[2][3], Float:angles[3]
 	get_aim_origin_vector(iPlayer, 16.0, 0.0, -4.0, origin[0])
@@ -536,10 +526,7 @@ public zr_item_event(iPlayer, item, Slot)
 	
 	Amount += 1
 	set_pev(iEntity, pev_iuser4, Amount)
-	message_begin(MSG_ONE_UNRELIABLE, gmsgAmmoX, {0, 0, 0 }, iPlayer)
-	write_byte(14)
-	write_byte(Amount)
-	message_end()
+	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_C4, Amount);
 	
 	engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 1, PITCH_NORM)
 	
@@ -581,22 +568,8 @@ public zr_being_human(iPlayer)
 	
 	set_pev(iEntity, pev_iuser4, get_pcvar_num(cvar_amount));
 
-	message_begin(MSG_ONE_UNRELIABLE, gmsgAmmoX, _, iPlayer);
-	write_byte(AMMO_C4);
-	write_byte(get_pcvar_num(cvar_amount));
-	message_end();
-	
-	message_begin(MSG_ONE, gmsgWeaponList, _, iPlayer);
-	write_string("weapon_c4");
-	write_byte(AMMO_C4);
-	write_byte(get_pcvar_num(cvar_amount));
-	write_byte(-1);
-	write_byte(-1);
-	write_byte(4);
-	write_byte(0);	// Original CS is 3 for some reason...
-	write_byte(CSW_C4);
-	write_byte(ITEM_FLAG_EXHAUSTIBLE);	// Original CS is ITEM_FLAG_LIMITINWORLD | ITEM_FLAG_EXHAUSTIBLE
-	message_end();
+	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_C4, get_pcvar_num(cvar_amount));
+	UTIL_WeaponList(iPlayer, CSW_C4, "weapon_c4", get_pcvar_num(cvar_amount));
 }
 
 stock get_speed_vector(const Float:origin1[3], const Float:origin2[3], Float:speed, Float:new_velocity[3])
