@@ -66,8 +66,8 @@ enum _:ARMOURY_TYPES
 };
 
 stock const ARMOURY_AMMOTYPE[][] = { "9mm", "9mm", "57mm", "45acp", "762Nato", "556Nato", "556Nato", "556Nato", "762Nato", "762Nato", "338Magnum", "buckshot", "buckshot", "556NatoBox" };
-stock const ARMOURY_AMMOAMOUNT[] = { 60, 60, 100, 60, 60, 60, 60, 60, 20, 40, 20, 24, 21, 100 };
-stock const ARMOURY_AMMOMAX[] = { 120, 120, 100, 100, 90, 90, 90, 90, 90, 90, 30, 32, 32, 200 };
+stock const ARMOURY_AMMOAMOUNT[] = { 120, 120, 200, 120, 120, 120, 120, 120, 40, 80, 40, 48, 42, 100 };
+stock const ARMOURY_AMMOMAX[] = { 240, 240, 200, 200, 180, 180, 180, 180, 180, 180, 60, 64, 64, 200 };
 
 enum _:AMMO_LIST
 {
@@ -101,6 +101,8 @@ enum _:InventorySlotType
 	KNIFE_SLOT,
 	GRENADE_SLOT,
 	C4_SLOT,
+	
+	InventorySlotCounts,
 };
 
 stock const WEAPON_CLASSNAME[][] = { "", "weapon_p228", "", "weapon_scout", "weapon_hegrenade", "weapon_xm1014", "weapon_c4", "weapon_mac10", "weapon_aug", "weapon_smokegrenade", "weapon_elite", "weapon_fiveseven",

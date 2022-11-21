@@ -10,14 +10,21 @@
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Stormtrooper"
-#define VERSION	"1.0.1 CSMW:ZR"
+#define VERSION	"1.0.2 CSMW:ZR"
 #define AUTHOR	"DSHGFHDS & Luna"
 
 new const StormtrooperID = 1;			//突击卫士ID
 
+new cvar_maxtotalwpns = 0;
+
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
+}
+
+public plugin_cfg()
+{
+	cvar_maxtotalwpns = get_cvar_pointer("uktpg_MaxiumTotalWeaponCounts");
 }
 
 public zr_being_human(iPlayer)
@@ -40,7 +47,10 @@ public zr_being_human(iPlayer)
 	
 	new rgIndices[sizeof WEAPON_CLASSNAME], iCount = 0;
 
-	if (pev_valid(get_pdata_cbase(iPlayer, m_rgpPlayerItems[PRIMARY_WEAPON_SLOT])) != 2)
+	new iFirearmCount = 0, iSlotCounts[InventorySlotCounts];
+	CountFirearms(iPlayer, iFirearmCount, iSlotCounts);
+
+	if (iFirearmCount < get_pcvar_num(cvar_maxtotalwpns) && iSlotCounts[PRIMARY_WEAPON_SLOT] < 1)
 	{
 		BuildWeaponList(PRIMARY_WEAPON_SLOT, rgIndices, iCount);
 
@@ -48,7 +58,7 @@ public zr_being_human(iPlayer)
 			GiveItem(iPlayer, WEAPON_CLASSNAME[rgIndices[random_num(1, iCount)]]);
 	}
 
-	if (pev_valid(get_pdata_cbase(iPlayer, m_rgpPlayerItems[PISTOL_SLOT])) != 2)
+	if (iFirearmCount < get_pcvar_num(cvar_maxtotalwpns) && iSlotCounts[PISTOL_SLOT] < 1)
 	{
 		BuildWeaponList(PISTOL_SLOT, rgIndices, iCount);
 
