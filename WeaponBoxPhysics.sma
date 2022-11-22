@@ -10,7 +10,7 @@
 #include <metamod_checkfunc>
 
 #define PLUGIN	"CWeaponBox Phys"
-#define VERSION	"1.0.3"
+#define VERSION	"1.0.4"
 #define AUTHOR	"Luna the Reborn"
 
 enum _:HookedEntityTypes
@@ -355,6 +355,8 @@ stock Float:UTIL_GetPlayerFront(iPlayer, Float:flMaxDist, Float:vecOrigin[3])
 	xs_vec_add(start, dest, start);
 
 	pev(iPlayer, pev_v_angle, dest);
+	dest[0] = floatclamp(dest[0], -70.0, 65.0);	// This is specialized, remove this line for other usages.
+
 	engfunc(EngFunc_MakeVectors, dest);
 	global_get(glb_v_forward, dest);
 	xs_vec_mul_scalar(dest, flMaxDist, dest);
