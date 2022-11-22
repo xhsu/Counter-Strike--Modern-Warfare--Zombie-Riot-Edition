@@ -19,7 +19,7 @@ Modern Warfare Dev Team
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Weapon"
-#define VERSION	"2.1.2 CSMW:ZR"
+#define VERSION	"2.1.3 CSMW:ZR"
 #define AUTHOR	"Luna the Reborn"
 
 stock const BOMBER_ID = 4;			//爆破者的ID
@@ -34,6 +34,8 @@ public plugin_init()
 
 	register_forward(FM_SetModel, "fw_SetModel_Post", true);
 	register_forward(FM_PlayerPostThink, "fw_PlayerPostThink_Post", true);
+
+	RegisterHam(Ham_GiveAmmo, "player", "HamF_GiveAmmo");
 
 	new szText[64];
 
@@ -147,6 +149,26 @@ LAB_CONTINUE_PLAYERPOSTTHINK:
 		zr_set_user_item(iPlayer, g_rgiEquipmentIndices[BUY_ZR_EQP_ARMOUR]);
 	
 	g_rgflBotThink[iPlayer] = fCurTime + random_float(4.0, 6.0);
+}
+
+public HamF_GiveAmmo(iPlayer, iAmount, const szName[], iMax)
+{
+	new iIndex = -1;
+
+	for (new i = 0; i < sizeof AMMO_TYPE; ++i)
+	{
+		if (!strcmp(szName, AMMO_TYPE[i]))
+		{
+			iIndex = i;
+			break;
+		}
+	}
+
+	if (iIndex < 0)
+		return HAM_IGNORED;
+
+	SetHamParamInteger(4, GetMaxAmmoStockpileWithBuffer(iPlayer, iIndex));
+	return HAM_HANDLED;
 }
 
 public zr_being_human(iPlayer)

@@ -646,10 +646,10 @@ stock UTIL_AmmoPickup(iPlayer, iAmmoId, iAmount)
 	if (!gmsgAmmoPickup)
 		gmsgAmmoPickup = get_user_msgid("AmmoPickup");
 
-	emessage_begin(MSG_ONE_UNRELIABLE, gmsgAmmoPickup, _, iPlayer);
-	ewrite_byte(iAmmoId);
-	ewrite_byte(iAmount);
-	emessage_end();
+	message_begin(MSG_ONE_UNRELIABLE, gmsgAmmoPickup, _, iPlayer);
+	write_byte(iAmmoId);
+	write_byte(iAmount);
+	message_end();
 }
 
 stock UTIL_UpdateBpAmmoCount(iPlayer, iAmmoId, iAmount)
@@ -658,8 +658,8 @@ stock UTIL_UpdateBpAmmoCount(iPlayer, iAmmoId, iAmount)
 	if (!gmsgAmmoX)
 		gmsgAmmoX = get_user_msgid("AmmoX");
 
-	emessage_begin(MSG_ONE, gmsgAmmoX, _, iPlayer);
-	ewrite_byte(iAmmoId);
-	ewrite_byte(iAmount);
-	emessage_end();
+	message_begin(MSG_ONE, gmsgAmmoX, _, iPlayer);
+	write_byte(iAmmoId);
+	write_byte(iAmount);
+	message_end();
 }
