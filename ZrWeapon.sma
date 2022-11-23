@@ -19,14 +19,14 @@ Modern Warfare Dev Team
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Weapon"
-#define VERSION	"2.1.3 CSMW:ZR"
+#define VERSION	"2.1.4 CSMW:ZR"
 #define AUTHOR	"Luna the Reborn"
 
 stock const BOMBER_ID = 4;			//爆破者的ID
 
 new g_rgiWeaponIndices[sizeof WEAPON_CLASSNAME], g_rgiEquipmentIndices[EZRSpecialEquipments];
 new Float:g_rgflBotThink[33], g_rgiUpdateTimes[33];
-new cvar_despawningtime, cvar_armorperbuy, cvar_bombergrcap;
+new cvar_despawningtime, cvar_armorperbuy, cvar_bombergrcap, cvar_ammopricemul;
 
 public plugin_init()
 {
@@ -41,7 +41,11 @@ public plugin_init()
 
 	for (new i = 0; i < EZRSpecialEquipments; i ++)
 	{
-		formatex(szText, charsmax(szText), "%s	\y%d", ZR_EQUIPMENT_NAME[i], ZR_EQUIPMENT_COST[i]);
+		if (i == BUY_ZR_EQP_CUR_BPAMMO || i == BUY_ZR_EQP_ALL_BPAMMO)
+			formatex(szText, charsmax(szText), "%s	\y以顆計價", ZR_EQUIPMENT_NAME[i]);
+		else
+			formatex(szText, charsmax(szText), "%s	\y$%d", ZR_EQUIPMENT_NAME[i], ZR_EQUIPMENT_COST[i]);
+
 		g_rgiEquipmentIndices[i] = zr_register_item(szText, HUMAN, 3);	// Always placed at slot 3.
 	}
 
@@ -50,13 +54,14 @@ public plugin_init()
 		if (WEAPON_ZR_BUYSLOT[i] <= 0 || WEAPON_ZR_COST[i] <= 0)
 			continue;
 
-		formatex(szText, charsmax(szText), "%s	\y%d", WEAPON_NAME[i], WEAPON_ZR_COST[i]);
+		formatex(szText, charsmax(szText), "%s	\y$%d", WEAPON_NAME[i], WEAPON_ZR_COST[i]);
 		g_rgiWeaponIndices[i] = zr_register_item(szText, HUMAN, WEAPON_ZR_BUYSLOT[i]);
 	}
 
 	cvar_despawningtime = register_cvar("zr_weaponbox_despawn_time", "120.0")	// 掉落的武器經過多長時間會被刪除？
 	cvar_armorperbuy = register_cvar("zr_armorgain_per_buy", "100");			// 每次購買護甲的量？
 	cvar_bombergrcap = register_cvar("zr_bomber_grenade_capacity", "3");		// 爆破手榴彈的上限？
+	cvar_ammopricemul = register_cvar("zr_ammo_cost_multiplier", "2.5");		// 彈藥漲價幅度
 }
 
 public plugin_precache()
@@ -251,55 +256,71 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 			zr_set_user_money(iPlayer, iMoney - WEAPON_ZR_COST[i], true);
 			GiveAmmo(iPlayer, WEAPON_BPAMMO_INDEX[i], AMMO_MAX_CAPACITY[WEAPON_BPAMMO_INDEX[i]]);
 		}
-		
+
 		return;
 	}
 
 	if (iItemIndex == g_rgiEquipmentIndices[BUY_ZR_EQP_ALL_BPAMMO])
 	{
-		if (iMoney < ZR_EQUIPMENT_COST[BUY_ZR_EQP_ALL_BPAMMO])
+		new iCost = EstimateAmmunitionCosts(iPlayer);
+
+		if (iMoney < iCost)
 		{
-			client_print(iPlayer, print_center, "金錢不足!");
+			client_print(iPlayer, print_center, "金錢不足! 目前購買全部彈藥需要%d元。", iCost);
 			return;
 		}
 
-		ReplenishAmmunition(iPlayer);
-		zr_set_user_money(iPlayer, iMoney - ZR_EQUIPMENT_COST[BUY_ZR_EQP_ALL_BPAMMO], true);
-
+		new bool:bShouldDeductMoney = ReplenishAmmunition(iPlayer);
 		new iEntity = -1;
+
 		if ((iEntity = HasWeapon(iPlayer, CSW_M3)) > 0)
 		{
 			if (pev(iEntity, pev_weapons) == RPG7_SPECIAL_CODE)
-				ReplenishRPG7Rockets(iPlayer, iEntity, get_cvar_num("RPG_MaxAmmo"));
+				bShouldDeductMoney = ReplenishRPG7Rockets(iPlayer, iEntity, get_cvar_num("RPG_MaxAmmo")) || bShouldDeductMoney;
 		}
 
-		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		if (bShouldDeductMoney)
+		{
+			zr_set_user_money(iPlayer, iMoney - iCost, true);
+			engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		}
+		else
+			client_print(iPlayer, print_center, "彈藥充足!");
+
 		return;
 	}
 
 	else if (iItemIndex == g_rgiEquipmentIndices[BUY_ZR_EQP_CUR_BPAMMO])
 	{
-		if (iMoney < ZR_EQUIPMENT_COST[BUY_ZR_EQP_CUR_BPAMMO])
+		new iWeapon = get_pdata_cbase(iPlayer, m_pActiveItem);
+		new iCost = EstimateAmmunitionCosts(iPlayer, iWeapon);
+
+		if (iMoney < iCost)
 		{
-			client_print(iPlayer, print_center, "金錢不足!");
+			client_print(iPlayer, print_center, "金錢不足! 目前購買全部彈藥需要%d元。", iCost);
 			return;
 		}
 
-		new iWeapon = get_pdata_cbase(iPlayer, m_pActiveItem);
 		if (get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON) <= 0 || get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON) <= 0)
 		{
 			client_print(iPlayer, print_center, "當前武器不適用彈藥補充!");
 			return;
 		}
 
+		new bool:bShouldDeductMoney = false;
 		if (pev(iWeapon, pev_weapons) == RPG7_SPECIAL_CODE)
-			ReplenishRPG7Rockets(iPlayer, iWeapon, get_cvar_num("RPG_MaxAmmo"));
+			bShouldDeductMoney = ReplenishRPG7Rockets(iPlayer, iWeapon, get_cvar_num("RPG_MaxAmmo"));
 		else
-			ReplenishAmmunition(iPlayer, iWeapon);
+			bShouldDeductMoney = ReplenishAmmunition(iPlayer, iWeapon);
 
-		zr_set_user_money(iPlayer, iMoney - ZR_EQUIPMENT_COST[BUY_ZR_EQP_CUR_BPAMMO], true);
+		if (bShouldDeductMoney)
+		{
+			zr_set_user_money(iPlayer, iMoney - iCost, true);
+			engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		}
+		else
+			client_print(iPlayer, print_center, "當前武器彈藥充足!");
 
-		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 		return;
 	}
 
@@ -445,4 +466,58 @@ BuildAffordableWeaponList(iMoney, iSlot, rgIndices[], &iCount)
 		iCount++;
 		rgIndices[iCount] = g_rgiWeaponIndices[i];
 	}
+}
+
+EstimateAmmunitionCosts(iPlayer, iWeapon = -1)
+{
+	new iAmmoId = -1;
+	new Float:flCosts = 0.0;
+
+	// HACKHACK: Special usage.
+	// Replenish slot.
+	if (0 < iWeapon < sizeof m_rgpPlayerItems)
+	{
+		iWeapon = get_pdata_cbase(iPlayer, m_rgpPlayerItems[iWeapon], XO_CBASEPLAYER);
+
+		while (pev_valid(iWeapon) == 2)
+		{
+			iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
+
+			if (iAmmoId > 0)
+				flCosts += AMMO_ZR_COST_PER_BULLET[iAmmoId] * (float(GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoId)) - float(get_pdata_int(iPlayer, m_rgAmmo[iAmmoId], XO_CBASEPLAYER)));
+
+			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
+		}
+
+		return floatround(flCosts * get_pcvar_float(cvar_ammopricemul), floatround_ceil);
+	}
+
+	// Replenish a specific weapon.
+	if (pev_valid(iWeapon) == 2)
+	{
+		iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
+
+		if (iAmmoId > 0)
+			flCosts += AMMO_ZR_COST_PER_BULLET[iAmmoId] * (float(GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoId)) - float(get_pdata_int(iPlayer, m_rgAmmo[iAmmoId], XO_CBASEPLAYER)));
+
+		return floatround(flCosts * get_pcvar_float(cvar_ammopricemul), floatround_ceil);
+	}
+
+	// Replenish every weapon.
+	for (new i = 0; i <= 2; i++)	// Only do it for primary and pistol.
+	{
+		iWeapon = get_pdata_cbase(iPlayer, m_rgpPlayerItems[i], XO_CBASEPLAYER);
+
+		while (pev_valid(iWeapon) == 2)
+		{
+			iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
+
+			if (iAmmoId > 0 && pev(iPlayer, pev_weapons) & (1 << get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM)))	// You have to own it, and it appears in your inventory.
+				flCosts += AMMO_ZR_COST_PER_BULLET[iAmmoId] * (float(GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoId)) - float(get_pdata_int(iPlayer, m_rgAmmo[iAmmoId], XO_CBASEPLAYER)));
+
+			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
+		}
+	}
+
+	return floatround(flCosts * get_pcvar_float(cvar_ammopricemul), floatround_ceil);
 }

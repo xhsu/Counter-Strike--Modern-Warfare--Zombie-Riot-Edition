@@ -92,6 +92,7 @@ stock const AMMO_MAX_CAPACITY[] = { -1, 60, 180, 200, 180, 64, 200, 200, 70, 104
 stock const AMMO_TYPE[][] = { "", "338Magnum", "762Nato", "556NatoBox", "556Nato", "buckshot", "45ACP", "57mm", "50AE", "357SIG", "9mm", "Flashbang", "HEGrenade", "SmokeGrenade", "C4" };
 stock const AMMO_CLASSNAME[][] = { "", "ammo_338magnum", "ammo_762nato", "ammo_556natobox", "ammo_556nato", "ammo_buckshot", "ammo_45acp", "ammo_57mm", "ammo_50ae", "ammo_357sig", "ammo_9mm" };
 stock const AMMO_NAME[][] = { "", ".338馬格南", "7.62mm北約", "5.56mm北約(盒裝)", "5.56mm北約", "鹿彈", "柯特自動手槍彈", "5.7mm", ".50AE", ".357SIG", "9mm巴拉貝魯姆", "閃光彈", "高爆手橊彈", "急凍手橊彈", "C4炸藥包" };
+stock const Float:AMMO_ZR_COST_PER_BULLET[] = { 0.0, 12.5, 2.667, 2.0, 2.0, 8.125, 2.083, 1.0, 5.714, 3.846, 0.667, 100.0, 200.0, 200.0, 0.0 };
 
 enum _:InventorySlotType
 {
@@ -225,14 +226,21 @@ stock GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoType)
 	return iAmmoBuffer + AMMO_MAX_CAPACITY[iAmmoType];
 }
 
-stock GiveAmmo(iPlayer, iAmmoType, iNum, iMax = -1)
+stock bool:GiveAmmo(iPlayer, iAmmoType, iNum, iMax = -1)
 {
-	return ExecuteHamB(Ham_GiveAmmo, iPlayer, iNum, AMMO_TYPE[iAmmoType], iMax > 0 ? iMax : GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoType));
+	iMax = (iMax > 0) ? iMax : GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoType);
+
+	if (get_pdata_int(iPlayer, m_rgAmmo[iAmmoType], XO_CBASEPLAYER) >= iMax)
+		return false;
+
+	ExecuteHamB(Ham_GiveAmmo, iPlayer, iNum, AMMO_TYPE[iAmmoType], iMax);
+	return true;
 }
 
-stock ReplenishAmmunition(iPlayer, iWeapon = -1)
+stock bool:ReplenishAmmunition(iPlayer, iWeapon = -1)
 {
 	new iAmmoId = -1;
+	new bool:bReplenishHappened = false;
 
 	// HACKHACK: Special usage.
 	// Replenish slot.
@@ -245,12 +253,12 @@ stock ReplenishAmmunition(iPlayer, iWeapon = -1)
 			iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 
 			if (iAmmoId > 0)
-				GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]);
+				bReplenishHappened = GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]) || bReplenishHappened;
 
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
 		}
 
-		return;
+		return bReplenishHappened;
 	}
 
 	// Replenish a specific weapon.
@@ -259,9 +267,9 @@ stock ReplenishAmmunition(iPlayer, iWeapon = -1)
 		iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 
 		if (iAmmoId > 0)
-			GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]);
+			bReplenishHappened = GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]) || bReplenishHappened;
 
-		return;
+		return bReplenishHappened;
 	}
 
 	// Replenish every weapon.
@@ -274,11 +282,13 @@ stock ReplenishAmmunition(iPlayer, iWeapon = -1)
 			iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 
 			if (iAmmoId > 0 && pev(iPlayer, pev_weapons) & (1<<get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM)))	// You have to own it, and it appears in your inventory.
-				GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]);
+				bReplenishHappened = GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]) || bReplenishHappened;
 
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
 		}
 	}
+
+	return bReplenishHappened;
 }
 
 /*
@@ -569,7 +579,7 @@ stock CountFirearms(iPlayer, &iWeaponCounts, iSlotCounts[])
 #define m_iRocketBpammo		9	// Don't use offset 8 within ReGameDLL-CS!
 #define AMMO_RPG_ROCKET		15	// Create a fake ammo type. Starting from AMMO_C4 == 14.
 
-stock ReplenishRPG7Rockets(iPlayer, iEntity, iAmount)
+stock bool:ReplenishRPG7Rockets(iPlayer, iEntity, iAmount)
 {
 	new iOldAmmo = get_pdata_int(iEntity, m_iRocketBpammo, XO_CBASEPLAYERWEAPON);
 
@@ -577,7 +587,12 @@ stock ReplenishRPG7Rockets(iPlayer, iEntity, iAmount)
 	UTIL_UpdateBpAmmoCount(iPlayer, AMMO_RPG_ROCKET, iAmount);
 
 	if (iAmount - iOldAmmo > 0)
+	{
 		UTIL_AmmoPickup(iPlayer, AMMO_RPG_ROCKET, iAmount - iOldAmmo);
+		return true;
+	}
+
+	return false;
 }
 
 

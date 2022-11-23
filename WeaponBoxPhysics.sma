@@ -10,7 +10,7 @@
 #include <metamod_checkfunc>
 
 #define PLUGIN	"CWeaponBox Phys"
-#define VERSION	"1.0.4"
+#define VERSION	"1.0.5"
 #define AUTHOR	"Luna the Reborn"
 
 enum _:HookedEntityTypes
@@ -32,7 +32,8 @@ new const g_rgszDropSFX[] = "items/weapondrop1.wav";
 
 #define m_flTimeNextTouchSfx		m_flStartThrow
 
-new cvar_throwingweaponvelocity, cvar_grenadehitvelocity, cvar_grenadehitdamage;
+new cvar_throwingweaponvelocity, cvar_grenadehitvelocity, cvar_grenadehitdamage, cvar_gunshotenergyconv, cvar_friction, cvar_gravity, cvar_velocitydecay;
+
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -48,9 +49,13 @@ public plugin_init()
 
 	RegisterHam(Ham_Touch, g_rgrgszClassNames[CGrenade], "HamF_CGrenade_Touch_Post", true);
 
-	cvar_throwingweaponvelocity = register_cvar("weaponphys_throwingweapon_velocity", "350.0");
-	cvar_grenadehitvelocity = register_cvar("weaponphys_grenade_hit_velocity", "400.0");
-	cvar_grenadehitdamage = register_cvar("weaponphys_grenade_hit_damage", "5.0");
+	cvar_throwingweaponvelocity = register_cvar("weaponphys_throwingweapon_velocity", "350.0");	// 擲出武器的初始速度。單位：英吋/秒
+	cvar_grenadehitvelocity = register_cvar("weaponphys_grenade_hit_velocity", "400.0");		// 手榴彈至少要達到多少速度方可造成鈍擊傷害？
+	cvar_grenadehitdamage = register_cvar("weaponphys_grenade_hit_damage", "5.0");				// 手榴彈的鈍擊傷害
+	cvar_gunshotenergyconv = register_cvar("weaponphys_gunshot_energy_convert", "20.0");		// W模型被命中後有多少傷害被轉換成動能？
+	cvar_friction = register_cvar("weaponphys_friction", "0.7");								// W模型楊氏模量(自行Google檢索)
+	cvar_gravity = register_cvar("weaponphys_gravity", "1.4");									// W模型所受重力倍數
+	cvar_velocitydecay = register_cvar("weaponphys_velocity_decay", "0.95");					// W模型摩擦係數
 }
 
 public plugin_precache()
@@ -178,7 +183,7 @@ public HamF_Touch_Post(iEntity, iPtd)
 
 	if (pev(iEntity, pev_flags) & FL_ONGROUND)
 	{
-		xs_vec_mul_scalar(vecVelocity, 0.95, vecVelocity);	// Additional friction. Don't hrash.
+		xs_vec_mul_scalar(vecVelocity, get_pcvar_float(cvar_velocitydecay), vecVelocity);	// Additional friction. Don't hrash.
 		set_pev(iEntity, pev_velocity, vecVelocity);
 	}
 }
@@ -216,7 +221,7 @@ public HamF_TraceAttack(iVictim, iAttacker, Float:flDamage, Float:vecDir[3], tr,
 		pev(iVictim, pev_velocity, vecVelocity);
 		
 		new Float:vecVel2[3];
-		xs_vec_mul_scalar(vecDir, flDamage * 20.0, vecVel2);
+		xs_vec_mul_scalar(vecDir, flDamage * get_pcvar_float(cvar_gunshotenergyconv), vecVel2);
 		xs_vec_add(vecVel2, vecVelocity, vecVel2);	// Original speed must be included.
 		set_pev(iVictim, pev_velocity, vecVel2);
 		
@@ -241,7 +246,7 @@ public HamF_TakeDamage(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamag
 		pev(iVictim, pev_origin, vecVelocity);
 		xs_vec_sub(vecVelocity, vecOrigin, vecVelocity);
 		xs_vec_normalize(vecVelocity, vecVelocity);
-		xs_vec_mul_scalar(vecVelocity, flDamage * 20.0, vecVelocity);
+		xs_vec_mul_scalar(vecVelocity, flDamage * get_pcvar_float(cvar_gunshotenergyconv), vecVelocity);
 		set_pev(iVictim, pev_velocity, vecVelocity)
 		
 		FreeRotationInTheAir(iVictim);
@@ -272,8 +277,8 @@ PlayerKick(iEntity, iPlayer)
 
 Materialization(iEntity)
 {
-	set_pev(iEntity, pev_friction, 0.7);	// Make it slide-able.
-	set_pev(iEntity, pev_gravity, 1.4);
+	set_pev(iEntity, pev_friction, get_pcvar_float(cvar_friction));	// Make it slide-able.
+	set_pev(iEntity, pev_gravity, get_pcvar_float(cvar_gravity));
 	set_pev(iEntity, pev_solid, SOLID_BBOX);
 	set_pev(iEntity, pev_movetype, MOVETYPE_BOUNCE);
 	set_pev(iEntity, pev_takedamage, DAMAGE_YES);
