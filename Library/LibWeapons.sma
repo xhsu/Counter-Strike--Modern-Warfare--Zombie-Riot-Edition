@@ -226,7 +226,7 @@ stock GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoType)
 	return iAmmoBuffer + AMMO_MAX_CAPACITY[iAmmoType];
 }
 
-stock bool:GiveAmmo(iPlayer, iAmmoType, iNum, iMax = -1)
+stock bool:GiveAmmo(iPlayer, iAmmoType, iNum = 1000, iMax = -1)
 {
 	iMax = (iMax > 0) ? iMax : GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoType);
 
@@ -253,7 +253,7 @@ stock bool:ReplenishAmmunition(iPlayer, iWeapon = -1)
 			iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 
 			if (iAmmoId > 0)
-				bReplenishHappened = GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]) || bReplenishHappened;
+				bReplenishHappened = GiveAmmo(iPlayer, iAmmoId) || bReplenishHappened;
 
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
 		}
@@ -267,7 +267,7 @@ stock bool:ReplenishAmmunition(iPlayer, iWeapon = -1)
 		iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 
 		if (iAmmoId > 0)
-			bReplenishHappened = GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]) || bReplenishHappened;
+			bReplenishHappened = GiveAmmo(iPlayer, iAmmoId) || bReplenishHappened;
 
 		return bReplenishHappened;
 	}
@@ -282,7 +282,7 @@ stock bool:ReplenishAmmunition(iPlayer, iWeapon = -1)
 			iAmmoId = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 
 			if (iAmmoId > 0 && pev(iPlayer, pev_weapons) & (1<<get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM)))	// You have to own it, and it appears in your inventory.
-				bReplenishHappened = GiveAmmo(iPlayer, iAmmoId, AMMO_MAX_CAPACITY[iAmmoId]) || bReplenishHappened;
+				bReplenishHappened = GiveAmmo(iPlayer, iAmmoId) || bReplenishHappened;
 
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
 		}

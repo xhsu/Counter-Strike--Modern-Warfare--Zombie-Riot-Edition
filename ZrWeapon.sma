@@ -264,29 +264,29 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 	{
 		new iCost = EstimateAmmunitionCosts(iPlayer);
 
+		if (iCost <= 0)
+		{
+			client_print(iPlayer, print_center, "彈藥充足!");
+			return;
+		}
+
 		if (iMoney < iCost)
 		{
 			client_print(iPlayer, print_center, "金錢不足! 目前購買全部彈藥需要%d元。", iCost);
 			return;
 		}
 
-		new bool:bShouldDeductMoney = ReplenishAmmunition(iPlayer);
-		new iEntity = -1;
+		ReplenishAmmunition(iPlayer);
 
+		new iEntity = -1;
 		if ((iEntity = HasWeapon(iPlayer, CSW_M3)) > 0)
 		{
 			if (pev(iEntity, pev_weapons) == RPG7_SPECIAL_CODE)
-				bShouldDeductMoney = ReplenishRPG7Rockets(iPlayer, iEntity, get_cvar_num("RPG_MaxAmmo")) || bShouldDeductMoney;
+				ReplenishRPG7Rockets(iPlayer, iEntity, get_cvar_num("RPG_MaxAmmo"));
 		}
 
-		if (bShouldDeductMoney)
-		{
-			zr_set_user_money(iPlayer, iMoney - iCost, true);
-			engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		}
-		else
-			client_print(iPlayer, print_center, "彈藥充足!");
-
+		zr_set_user_money(iPlayer, iMoney - iCost, true);
+		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 		return;
 	}
 
@@ -295,32 +295,31 @@ public zr_item_event(iPlayer, iItemIndex, iSlot)
 		new iWeapon = get_pdata_cbase(iPlayer, m_pActiveItem);
 		new iCost = EstimateAmmunitionCosts(iPlayer, iWeapon);
 
+		if (iCost <= 0)
+		{
+			client_print(iPlayer, print_center, "當前武器彈藥充足!");
+			return;
+		}
+
 		if (iMoney < iCost)
 		{
 			client_print(iPlayer, print_center, "金錢不足! 目前購買全部彈藥需要%d元。", iCost);
 			return;
 		}
 
-		if (get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON) <= 0 || get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON) <= 0)
+		if (get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON) <= 0 || get_pdata_int(iWeapon, m_iClip, XO_CBASEPLAYERWEAPON) < 0)
 		{
 			client_print(iPlayer, print_center, "當前武器不適用彈藥補充!");
 			return;
 		}
 
-		new bool:bShouldDeductMoney = false;
 		if (pev(iWeapon, pev_weapons) == RPG7_SPECIAL_CODE)
-			bShouldDeductMoney = ReplenishRPG7Rockets(iPlayer, iWeapon, get_cvar_num("RPG_MaxAmmo"));
+			ReplenishRPG7Rockets(iPlayer, iWeapon, get_cvar_num("RPG_MaxAmmo"));
 		else
-			bShouldDeductMoney = ReplenishAmmunition(iPlayer, iWeapon);
+			ReplenishAmmunition(iPlayer, iWeapon);
 
-		if (bShouldDeductMoney)
-		{
-			zr_set_user_money(iPlayer, iMoney - iCost, true);
-			engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		}
-		else
-			client_print(iPlayer, print_center, "當前武器彈藥充足!");
-
+		zr_set_user_money(iPlayer, iMoney - iCost, true);
+		engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 		return;
 	}
 
