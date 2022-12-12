@@ -1,5 +1,7 @@
 /* ammx编写头版 by Devzone*/
 
+#pragma semicolon 1
+
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
@@ -10,10 +12,35 @@
 #include "Library/LibWeapons.sma"
 
 #define PLUGIN	"Zr Stormtrooper"
-#define VERSION	"1.0.2 CSMW:ZR"
+#define VERSION	"1.0.3 CSMW:ZR"
 #define AUTHOR	"DSHGFHDS & Luna"
 
 new const StormtrooperID = 1;			//突击卫士ID
+
+stock const g_rgszPrimaryWeaponsPool[][] =
+{
+	"weapon_xm1014",
+	"weapon_aug", 
+	"weapon_ump45",
+	"weapon_galil",
+	"weapon_famas",
+	"weapon_mp5navy",
+	"weapon_m3",
+	"weapon_m4a1",
+	"weapon_sg552",
+	"weapon_ak47",
+	"weapon_p90"
+};
+
+stock const g_rgszSecondaryWeaponsPool[][] =
+{
+	"weapon_p228",
+	"weapon_elite",
+	"weapon_fiveseven",
+	"weapon_usp",
+	"weapon_glock18",
+	"weapon_deagle"
+};
 
 new cvar_maxtotalwpns = 0;
 
@@ -44,41 +71,15 @@ public zr_being_human(iPlayer)
 	
 	for (new i = 0; i < AMMO_MAX_CAPACITY[AMMO_SmokeGrenade]; i++)
 		GiveGrenade(iPlayer, CSW_SMOKEGRENADE);
-	
-	new rgIndices[sizeof WEAPON_CLASSNAME], iCount = 0;
 
 	new iFirearmCount = 0, iSlotCounts[InventorySlotCounts];
 	CountFirearms(iPlayer, iFirearmCount, iSlotCounts);
 
 	if (iFirearmCount < get_pcvar_num(cvar_maxtotalwpns) && iSlotCounts[PRIMARY_WEAPON_SLOT] < 1)
-	{
-		BuildWeaponList(PRIMARY_WEAPON_SLOT, rgIndices, iCount);
-
-		if (iCount)
-			GiveItem(iPlayer, WEAPON_CLASSNAME[rgIndices[random_num(1, iCount)]]);
-	}
+		GiveItem(iPlayer, g_rgszPrimaryWeaponsPool[random_num(0, sizeof g_rgszPrimaryWeaponsPool - 1)]);
 
 	if (iFirearmCount < get_pcvar_num(cvar_maxtotalwpns) && iSlotCounts[PISTOL_SLOT] < 1)
-	{
-		BuildWeaponList(PISTOL_SLOT, rgIndices, iCount);
-
-		if (iCount)
-			GiveItem(iPlayer, WEAPON_CLASSNAME[rgIndices[random_num(1, iCount)]]);
-	}
+		GiveItem(iPlayer, g_rgszSecondaryWeaponsPool[random_num(0, sizeof g_rgszSecondaryWeaponsPool - 1)]);
 
 	ReplenishAmmunition(iPlayer);
-}
-
-BuildWeaponList(iSlot, rgIndices[], &iCount)
-{
-	iCount = 0;
-
-	for (new i = 0; i < sizeof WEAPON_CLASSNAME; i++)
-	{
-		if (iSlot > 0 && WEAPON_SLOT[i] != iSlot)
-			continue;
-			
-		iCount++;
-		rgIndices[iCount] = i;
-	}
 }

@@ -78,15 +78,15 @@ enum
 	DATAKEY_30,
 	DATAKEY_31,
 	DATAKEY_32
-}
+};
 
 //zombieriot_amxx.dll通过对实体的pev_iuser2设置标志,来区分幽灵是否能穿透这实体(占用了iuser2,要小心使用)
-native SetPenetrationToGhost(iEntity, bool:value)
+native SetPenetrationToGhost(iEntity, bool:value);
 
 //zombieriot_amxx.dll提供的接口,你可以直接使用.但也可以使用zombieriot.inc提供的接口来代替.
-native ZR_PatchRoundEnd(noend)
-native ZR_TerminateRound(Float:delay, winstatus)
-native ZR_GetTeamScore(team)
-native ZR_SetTeamScore(team, score)
-native ZR_UpdateTeamScore(team)
-native ZR_SetAnimation(iPlayer, Float:Time, Anim, GaitAnim = -1)
+native ZR_PatchRoundEnd(noend);
+native ZR_TerminateRound(Float:delay, winstatus);
+native ZR_GetTeamScore(team);
+native ZR_SetTeamScore(team, score);
+native ZR_UpdateTeamScore(team);
+native ZR_SetAnimation(iPlayer, Float:Time, Anim, GaitAnim = -1);
