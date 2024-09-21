@@ -140,7 +140,7 @@ new const RemoveSoundsPrecache[][] =
 	"weapons/usp_silencer_off.wav",
 	"weapons/usp_sliderelease.wav",
 	"weapons/usp_slideback.wav"
-}
+};
 
 new const g_remove_entities[][] =
 {

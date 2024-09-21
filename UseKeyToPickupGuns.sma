@@ -21,7 +21,7 @@
 #endif
 
 #define PLUGIN		"E鍵撿槍"
-#define VERSION		"2.2.7 CSMW:ZR"
+#define VERSION		"2.2.8 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn(xhsu)"
 
 /**--------------編譯選項：是否啟用提示文字？*/
@@ -378,12 +378,12 @@ public fw_SetModel_Post(iEntity, const szModel[])
 }
 #endif
 
-ExtractItemsFromWeaponBox(iEntity, iPlayer, bool:bShouldRemove = true)
+ExtractItemsFromWeaponBox(iEntity, iPlayer, bool:bShouldRemove = true, bool:bShouldForceSwitch = true)
 {
-	new i, iAmmoType = 0;
+	new i, iAmmoType = 0, iWeapon = 0;
 	for (i = 0; i < sizeof m_rgpPlayerItems2; i++)
 	{
-		new iWeapon = get_pdata_cbase(iEntity, m_rgpPlayerItems2[i], XO_CWEAPONBOX);
+		iWeapon = get_pdata_cbase(iEntity, m_rgpPlayerItems2[i], XO_CWEAPONBOX);
 
 		if (pev_valid(iWeapon) == 2)
 		{
@@ -396,6 +396,8 @@ ExtractItemsFromWeaponBox(iEntity, iPlayer, bool:bShouldRemove = true)
 			iAmmoType = get_pdata_int(iWeapon, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
 			break;
 		}
+		else
+			iWeapon = 0;
 	}
 
 	GiveAmmo(iPlayer, iAmmoType, SumAmmunitionOfWeaponBox(iEntity));
@@ -405,6 +407,14 @@ ExtractItemsFromWeaponBox(iEntity, iPlayer, bool:bShouldRemove = true)
 		set_pev(iEntity, pev_flags, pev(iEntity, pev_flags) | FL_KILLME);
 	
 	emit_sound(iPlayer, CHAN_ITEM, "items/gunpickup2.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+
+	if (bShouldForceSwitch && iWeapon)
+	{
+		new szWeaponClass[32];
+		pev(iWeapon, pev_classname, szWeaponClass, charsmax(szWeaponClass));
+
+		engclient_cmd(iPlayer, szWeaponClass);
+	}
 }
 
 ExtractAmmunitionFromWeaponBox(iEntity, iPlayer, bool:bRemoveOnEmpty = true, bool:bAlwaysRemove = false)

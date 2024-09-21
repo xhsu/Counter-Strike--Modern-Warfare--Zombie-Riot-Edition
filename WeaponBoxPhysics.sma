@@ -283,6 +283,9 @@ Materialization(iEntity)
 	set_pev(iEntity, pev_movetype, MOVETYPE_BOUNCE);
 	set_pev(iEntity, pev_takedamage, DAMAGE_YES);
 	engfunc(EngFunc_SetSize, iEntity, Float:{-4.0, -4.0, -0.5}, Float:{4.0, 4.0, 0.5});
+
+	// Co-op with DLL
+	set_pev(iEntity, pev_fuser4, 9527.0);
 }
 
 FreeRotationInTheAir(iEntity)
