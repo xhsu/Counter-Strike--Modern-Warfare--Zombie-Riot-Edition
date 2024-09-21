@@ -88,21 +88,18 @@ stock set_pdata_vec2(ent, vec_offsets, const Float:vec[3], intbase_linuxdiff=5)
 	}
 }
 
-stock get_pdata_ehandle(ent, iOffset, &serial=0, intbased_linuxdiff=5)
+stock get_pdata_ehandle(ent, iOffset, &serial = -1, intbased_linuxdiff = 5)
 {
-	if( serial )
+	if (serial == -1)
 	{
-		serial = get_pdata_int(ent, iOffset+1, intbased_linuxdiff)
+		serial = get_pdata_int(ent, iOffset+1, intbased_linuxdiff);
 	}
-	return get_pdata_ent(ent, iOffset * INT_BYTES, intbased_linuxdiff * INT_BYTES)
+
+	return get_pdata_ent(ent, iOffset * INT_BYTES, intbased_linuxdiff * INT_BYTES);
 }
 
-stock set_pdata_ehandle(ent, iOffset, handle, intbased_linuxdiff=5)
+stock set_pdata_ehandle(ent, iOffset, handle, intbased_linuxdiff = 5)
 {
-	set_pdata_ent(
-	if( serial )
-	{
-		serial = get_pdata_int(ent, iOffset+1, intbased_linuxdiff)
-	}
-	return get_pdata_int(ent, iOffset * INT_BYTES, intbased_linuxdiff * INT_BYTES)
+	set_pdata_ent(ent, iOffset * INT_BYTES, handle, intbased_linuxdiff * INT_BYTES);
+	set_pdata_int(ent, iOffset + 1, pev_serial(handle), intbased_linuxdiff);
 }
