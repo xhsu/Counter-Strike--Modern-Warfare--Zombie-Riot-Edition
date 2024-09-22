@@ -12,16 +12,17 @@ Modern Warfare Dev Team
 #endif
 #define _csmwzr_lib_math
 
-stock FixedUnsigned16(Float:value, scale = (1<<12))
+stock FixedUnsigned16(Float:value, scale = (1 << 12))
 {
-	new Float:output = value * float(scale);
-	if (output < 0.0)
-		output = 0.0;
+	new output = floatround(value * float(scale));
 
-	if (output > float(0xFFFF))
-		output = float(0xFFFF);
+	if (output < 0)
+		output = 0;
 
-	return floatround(output);
+	if (output > 0xFFFF)
+		output = 0xFFFF;
+
+	return output;
 }
 
 stock get_spherical_coord(const Float:ent_origin[3], Float:redius, Float:level_angle, Float:vertical_angle, Float:origin[3])

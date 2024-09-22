@@ -67,7 +67,7 @@ enum _:ARMOURY_TYPES
 
 stock const ARMOURY_AMMOTYPE[][] = { "9mm", "9mm", "57mm", "45acp", "762Nato", "556Nato", "556Nato", "556Nato", "762Nato", "762Nato", "338Magnum", "buckshot", "buckshot", "556NatoBox" };
 stock const ARMOURY_AMMOAMOUNT[] = { 120, 120, 200, 120, 120, 120, 120, 120, 40, 80, 40, 48, 42, 100 };
-stock const ARMOURY_AMMOMAX[] = { 240, 240, 200, 200, 180, 180, 180, 180, 180, 180, 60, 64, 64, 200 };
+stock const ARMOURY_AMMOMAX[] = { 240, 240, 200, 200, 180, 180, 180, 180, 180, 180, 60, 56, 56, 200 };
 
 enum _:AMMO_LIST
 {
@@ -88,7 +88,7 @@ enum _:AMMO_LIST
 	AMMO_C4,
 };
 
-stock const AMMO_MAX_CAPACITY[] = { -1, 60, 180, 200, 180, 64, 200, 200, 70, 104, 240, 2, 1, 1, 1 };
+stock const AMMO_MAX_CAPACITY[] = { -1, 60, 180, 200, 180, 56, 200, 200, 70, 104, 240, 3, 3, 3, 1 };
 stock const AMMO_TYPE[][] = { "", "338Magnum", "762Nato", "556NatoBox", "556Nato", "buckshot", "45ACP", "57mm", "50AE", "357SIG", "9mm", "Flashbang", "HEGrenade", "SmokeGrenade", "C4" };
 stock const AMMO_CLASSNAME[][] = { "", "ammo_338magnum", "ammo_762nato", "ammo_556natobox", "ammo_556nato", "ammo_buckshot", "ammo_45acp", "ammo_57mm", "ammo_50ae", "ammo_357sig", "ammo_9mm" };
 stock const AMMO_NAME[][] = { "", ".338馬格南", "7.62mm北約", "5.56mm北約(盒裝)", "5.56mm北約", "鹿彈", "柯特自動手槍彈", "5.7mm", ".50AE", ".357SIG", "9mm巴拉貝魯姆", "閃光彈", "高爆手橊彈", "急凍手橊彈", "C4炸藥包" };
@@ -110,6 +110,10 @@ stock const WEAPON_CLASSNAME[][] = { "", "weapon_p228", "", "weapon_scout", "wea
 										"weapon_ump45", "weapon_sg550", "weapon_galil", "weapon_famas", "weapon_usp", "weapon_glock18", "weapon_awp", "weapon_mp5navy", "weapon_m249", "weapon_m3", "weapon_m4a1",
 										"weapon_tmp", "weapon_g3sg1", "weapon_flashbang", "weapon_deagle", "weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90" };
 
+stock const WEAPON_BUY_COMMANDS[][] = { "", "p228", "", "scout", "hegren", "xm1014", "c4", "mac10", "aug", "sgren", "elites", "fiveseven",
+										"ump45", "sg550", "galil", "famas", "usp", "glock", "awp", "mp5", "m249", "m3", "m4a1",
+										"tmp", "g3sg1", "flash", "deagle", "sg552", "ak47", "knife", "p90" };
+
 stock const WEAPON_NAME[CSW_P90+1][] = { "", "P228 手槍", "錯誤 - 請聯繫插件作者", "SCOUT 狙擊槍", "高爆手橊彈", "XM1014 半自動霰彈槍", "C4 炸藥包", "MAC10 衝鋒槍",
 	"AUG 步槍", "急凍手橊彈", "ELITE 雙持手槍", "FIVESEVEN 手槍", "UMP45 衝鋒槍", "SG550 半自動狙擊槍", "GALIL 步槍", "FAMAS 步槍",
 	"USP 手槍", "GLOCK18 手槍", "AWP 狙擊槍", "MP5 衝鋒槍", "M249 輕機槍", "M3 壓動式霰彈槍", "M4A1 步槍",
@@ -120,6 +124,7 @@ stock const WEAPON_BPAMMO_INDEX[] = { AMMO_NOT_USED, 9, -1, 2, 12, 5, 14, 6, 4, 
 stock const WEAPON_POS_IN_SLOT[] = { -1, 3, -1, 9, 1, 12, 3, 13, 14, 3, 5, 6, 15, 16, 17, 18, 4, 2, 2, 7, 4, 5, 6, 11, 3, 2, 1, 10, 1, 1, 8 };
 stock const WEAPON_SLOT[] = { 0, 2, 0, 1, 4, 1, 5, 1, 1, 4, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 4, 2, 1, 1, 3, 1 };
 stock const WEAPON_ZR_BUYSLOT[] = { -1, 2, -1, 1, 3, 1, -1, 1, 1, 3, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 3, 2, 1, 1, -1, 1 };
+stock const WEAPON_CS_COST[] = { -1, 600, -1, 2750, 300, 3000, 0, 1400, 3500, 300, 800, 750, 1700, 4200, 2000, 2250, 500, 400, 4750, 1500, 5750, 1700, 3100, 1250, 5000, 200, 650, 3500, 2500, 0, 2350 };
 stock const WEAPON_ZR_COST[] = { -1, 600, -1, 1500, 800, 1900, -1, 1300, 1650, 1400, 800, 750, 1250, 2500, 1450, 1450, 550, 400, 2500, 1350, 8000, 1800, 1500, 1000, 2500, 500, 900, 1650, 1550, -1, 1400 };
 
 enum _:EZRSpecialEquipments
@@ -409,7 +414,7 @@ stock GiveItem(iPlayer, const szClassname[], iSpecialCode = 0)
 	return -1;
 }
 
-stock bool:GiveGrenade(iPlayer, iId, iMaxGrenade = -1, iSpecialCode = 0)
+stock GiveGrenade(iPlayer, iId, iMaxGrenade = -1, iSpecialCode = 0)
 {
 	new iAmmoId = WEAPON_BPAMMO_INDEX[iId];
 	new iCurGrenade = get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]);
@@ -417,21 +422,21 @@ stock bool:GiveGrenade(iPlayer, iId, iMaxGrenade = -1, iSpecialCode = 0)
 	if (iMaxGrenade < 0)
 		iMaxGrenade = AMMO_MAX_CAPACITY[iAmmoId];
 
-	if (pev(iPlayer, pev_weapons) & (1<<iId))	// Grenade entity will stay with player even if the ammo was depleted. However, the HUD will hide in that case.
+	if (pev(iPlayer, pev_weapons) & (1 << iId))	// Grenade entity will stay with player even if the ammo was depleted. However, the HUD will hide in that case.
 	{
 		if (iCurGrenade >= iMaxGrenade)
 		{
 			client_print(iPlayer, print_center, "%s已補滿(上限為%d個), 無法繼續購買!", WEAPON_NAME[iId], iMaxGrenade);
-			return false;
+			return 0;
 		}
 
 		set_pdata_int(iPlayer, m_rgAmmo[iAmmoId], ++iCurGrenade);
-		return true;
+		return iCurGrenade;
 	}
 	else if (iCurGrenade > 0)	// You have inventory, but have no access to the item. Hmmm..
 		set_pdata_int(iPlayer, m_rgAmmo[iAmmoId], 0);
 
-	return !!(GiveItem(iPlayer, WEAPON_CLASSNAME[iId], iSpecialCode) > 0);
+	return GiveItem(iPlayer, WEAPON_CLASSNAME[iId], iSpecialCode);
 }
 
 stock GetItemIdByArmoury(iArmouryIndex)
@@ -614,7 +619,7 @@ stock UTIL_WeaponList(iPlayer, iId, const szHudText[], iMaxAmmo = -1, iSlot = -1
 	message_begin(MSG_ONE, gmsgWeaponList, _, iPlayer);
 	write_string(szHudText);
 	write_byte(iAmmoType < 0 ? WEAPON_BPAMMO_INDEX[iId] : iAmmoType);
-	write_byte(iMaxAmmo < 0 ? AMMO_MAX_CAPACITY[WEAPON_BPAMMO_INDEX[iId]] : iMaxAmmo);
+	write_byte(iMaxAmmo < 0 ? WEAPON_BPAMMO_INDEX[iId] < 0 ? -1 : AMMO_MAX_CAPACITY[WEAPON_BPAMMO_INDEX[iId]] : iMaxAmmo);
 	write_byte(-1);
 	write_byte(-1);
 	write_byte((iSlot < 0 ? WEAPON_SLOT[iId] : iSlot) - 1);

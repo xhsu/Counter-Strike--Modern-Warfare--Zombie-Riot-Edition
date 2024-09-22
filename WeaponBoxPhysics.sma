@@ -10,7 +10,7 @@
 #include <metamod_checkfunc>
 
 #define PLUGIN	"CWeaponBox Phys"
-#define VERSION	"1.0.5"
+#define VERSION	"1.0.6"
 #define AUTHOR	"Luna the Reborn"
 
 enum _:HookedEntityTypes
