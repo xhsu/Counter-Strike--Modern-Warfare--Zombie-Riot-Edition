@@ -2,34 +2,13 @@
 
 #include <amxmodx>
 
+#include <Weather>
+
 #pragma semicolon 1
 
 #define PLUGIN		"Weather Controller"
-#define VERSION		"1.0"
+#define VERSION		"1.1.0.7512"
 #define AUTHOR		"xhsu"
-
-enum EWeather
-{
-	Sunny = 1,
-	Drizzle = 2,
-	ThunderStorm = 3,
-	Tempest = 4,
-	Snow = 5,
-	Sleet = 6,
-	BlackFog = 7,
-};
-
-enum EReceiveW
-{
-	Clear = 0,
-	Rain,
-	Snow,
-};
-
-native Weather_SetFog(r, g, b, Float:flDensity);
-native Weather_SetReceiveW(EReceiveW:what);
-native Weather_SetLightLevel(cLightLevel);
-native Weather_SetWeather(EWeather:what, cLightLevel = 0);
 
 public plugin_init()
 {
@@ -100,10 +79,8 @@ public Command_SetSunny(iPlayer)
 	new sz[4];
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
-	else
-		sz[0] = 'f';
 
-	Weather_SetWeather(Sunny, sz[0]);
+	Weather_SetWeather(W_Sunny, sz[0]);
 }
 
 public Command_SetDrizzle(iPlayer)
@@ -111,10 +88,8 @@ public Command_SetDrizzle(iPlayer)
 	new sz[4];
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
-	else
-		sz[0] = 'e';
 
-	Weather_SetWeather(Drizzle, sz[0]);
+	Weather_SetWeather(W_Drizzle, sz[0]);
 }
 
 public Command_SetThunderStorm(iPlayer)
@@ -122,10 +97,8 @@ public Command_SetThunderStorm(iPlayer)
 	new sz[4];
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
-	else
-		sz[0] = 'c';
 
-	Weather_SetWeather(ThunderStorm, sz[0]);
+	Weather_SetWeather(W_ThunderStorm, sz[0]);
 }
 
 public Command_SetTempest(iPlayer)
@@ -133,10 +106,8 @@ public Command_SetTempest(iPlayer)
 	new sz[4];
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
-	else
-		sz[0] = 'b';
 
-	Weather_SetWeather(Tempest, sz[0]);
+	Weather_SetWeather(W_Tempest, sz[0]);
 }
 
 public Command_SetSnow(iPlayer)
@@ -145,7 +116,7 @@ public Command_SetSnow(iPlayer)
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
 
-	Weather_SetWeather(EWeather:5, sz[0]);
+	Weather_SetWeather(W_Snow, sz[0]);
 }
 
 public Command_SetSleet(iPlayer)
@@ -154,7 +125,7 @@ public Command_SetSleet(iPlayer)
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
 
-	Weather_SetWeather(Sleet, sz[0]);
+	Weather_SetWeather(W_Sleet, sz[0]);
 }
 
 public Command_SetBlackFog(iPlayer)
@@ -163,5 +134,22 @@ public Command_SetBlackFog(iPlayer)
 	if (read_argc() > 1)
 		read_argv(1, sz, charsmax(sz));
 
-	Weather_SetWeather(BlackFog, sz[0]);
+	Weather_SetWeather(W_BlackFog, sz[0]);
+}
+/*
+public WeatherF_OnMinorThunder(cLightLevel)
+{
+	client_print(0, print_chat, "Thunderstorm lighting level: %c", cLightLevel);
+}
+
+public WeatherF_OnMajorThunder(cLightLevel)
+{
+	client_print(0, print_chat, "Tempest lighting level: %c", cLightLevel);
+}
+*/
+stock const g_rgszWeatherNames[][] = { "ERROR", "Sunny", "Drizzle", "Thunderstorm", "Tempest", "Snow", "Sleet", "BlackFog" };
+
+public WeatherF_OnWeatherChange(EWeather:iNewWeather, cLightLevel)
+{
+	client_print(0, print_chat, "Weather changed to %s with lighting level: %c", g_rgszWeatherNames[_:iNewWeather], cLightLevel);
 }
