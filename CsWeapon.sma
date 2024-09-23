@@ -16,6 +16,8 @@
 
 #define WEAPON_LIST_TASK_ID	5156438
 
+native Uranus_DropShield(iPlayer);
+
 new g_rgiCurIndex[33];
 
 public plugin_init()
@@ -107,6 +109,11 @@ public fw_ClientCommand(iPlayer)
 
 			set_pdata_int(iPlayer, m_iAccount, iMoney - WEAPON_CS_COST[i]);
 			UTIL_RefreshAccount(iPlayer);
+
+			if (WEAPON_SLOT[i] == 1 && get_pdata_bool(iPlayer, m_bOwnsShield))
+			{
+				Uranus_DropShield(iPlayer);
+			}
 		}
 
 		return FMRES_SUPERCEDE;

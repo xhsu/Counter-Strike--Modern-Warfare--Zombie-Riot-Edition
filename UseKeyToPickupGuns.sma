@@ -21,7 +21,7 @@
 #endif
 
 #define PLUGIN		"E鍵撿槍"
-#define VERSION		"2.2.8 CSMW:ZR"
+#define VERSION		"2.2.9 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn(xhsu)"
 
 /**--------------編譯選項：是否啟用提示文字？*/
@@ -83,6 +83,29 @@ public HamF_Touch(iEntity, iPlayer)
 	
 	new iWeapon = RevealWeaponFromWeaponBox(iEntity);
 	new iSlot = ExecuteHamB(Ham_Item_ItemSlot, iWeapon);
+
+	// Grabbing grenade if we can.
+	if (iSlot == 4)
+	{
+		new iId = get_pdata_int(iWeapon, m_iId);
+		new iResult = GiveGrenade(iPlayer, iId);	// Entity id or grenade amount.
+
+		if (iResult > 0)
+		{
+			// We got this grenade already, only adding 'ammo'
+			if (iResult < 33)
+			{
+				UTIL_AmmoPickup(iPlayer, WEAPON_BPAMMO_INDEX[iId], 1);
+				engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+			}
+
+			set_pev(iEntity, pev_flags, pev(iEntity, pev_flags) | FL_KILLME);
+			set_pev(iEntity, pev_solid, SOLID_NOT);
+		}
+
+		return HAM_SUPERCEDE;
+	}
+
 	if (iSlot != 1 && iSlot != 2)
 		return HAM_IGNORED;
 	
@@ -354,6 +377,29 @@ public fw_SetModel_Post(iEntity, const szModel[])
 
 	if (!is_user_alive(iPlayer))
 		return;
+
+	// Don't do this to grenades.
+	if (iAmmoType >= AMMO_Flashbang)
+	{
+		// If the drop is actually successful, give a new gr playerItem.
+		// It doesn't make sense to have only the GR ammo but not the playerItem.
+		// Luna: this doesn't work because the drop function in MP will treat items with ITEM_FLAG_EXHAUSTIBLE differently.
+
+		new iGrenadeCount = get_pdata_int(iPlayer, m_rgAmmo[iAmmoType]);
+		iGrenadeCount = max(iGrenadeCount - 1, 0);
+		set_pdata_int(iPlayer, m_rgAmmo[iAmmoType], iGrenadeCount, XO_CBASEPLAYER);
+
+		if (iGrenadeCount > 0)
+		{
+			new iWeapon = RevealWeaponFromWeaponBox(iEntity);
+			new iId = get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERWEAPON);
+
+			GiveItem(iPlayer, WEAPON_CLASSNAME[iId]);
+			set_pdata_int(iPlayer, m_rgAmmo[iAmmoType], iGrenadeCount, XO_CBASEPLAYER);
+		}
+
+		return;
+	}
 
 	for (new i = 1; i < sizeof m_rgpPlayerItems; i++)
 	{

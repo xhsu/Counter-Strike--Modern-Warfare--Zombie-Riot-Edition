@@ -158,7 +158,7 @@ stock LibWeapons_Init()
 	g_pfn_CBP_DropShield = OrpheuGetFunction("DropShield", "CBasePlayer");
 	g_pfn_CBP_SelectItem = OrpheuGetFunction("SelectItem", "CBasePlayer");
 	g_pfn_CBP_SetAnimation = OrpheuGetFunction("SetAnimation", "CBasePlayer");	// Unsupported by zombieriot_amxx.dll
-	g_pfn_CBPW_ReloadSound = OrpheuGetFunction("ReloadSound", "CBasePlayerWeapon");
+	// g_pfn_CBPW_ReloadSound = OrpheuGetFunction("ReloadSound", "CBasePlayerWeapon");	// Unsupported in Anniversary game, a.k.a. build >= 9920
 	g_pfn_CBPW_KickBack = OrpheuGetFunction("KickBack", "CBasePlayerWeapon");
 }
 
