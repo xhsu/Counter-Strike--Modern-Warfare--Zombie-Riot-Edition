@@ -3,84 +3,89 @@
 #include <amxmodx>
 #include <hamsandwich>
 #include <fakemeta>
-#include <offset>
 #include <xs>
 
+#include <offset>
+#include <cstrike_pdatas/pdatas_stocks>
+
+#pragma semicolon 1
+
 #define PLUGIN		"Grenade Quick Throw"
-#define VERSION		"1.3.3"
+#define VERSION		"1.4.0"
 #define AUTHOR		"Luna(plugin) & Matoilet(model)"
 
 /**--------------Configuration: Show a customized progress bar during cooking process?*/
-#define SHOW_HINT_TEXT	1
+#define SHOW_HINT_TEXT
 
 /**--------------Configuration: Modify the fuse length? (in sec., though.)*/
-#define CUSTOM_FUSE_LEN	1
+#define CUSTOM_FUSE_LEN
 
-/**--------------Configuration: Allow grenades detonate on your face. (Requires Orpheu module.)*/
-//#tryinclude <orpheu>
 
-#define CLASSNAME_GRENADE	"weapon_hegrenade"
-#define QTG_VMDL	"models/v_CODhegrenade.mdl"
+enum _:GrTypes
+{
+	NOT_THROWABLE = -1,
+	HEGRENADE = 0,
+	FLASHBANG = 1,
+	SMOKEGRENADE = 2,
+};
+
+new const THROWABLES_WORLD_MDL[][] = { "models/w_hegrenade.mdl", "models/w_flashbang.mdl", "models/w_smokegrenade.mdl" };
+new const THROWABLES_CLASSNAME[][] = { "weapon_hegrenade", "weapon_flashbang", "weapon_smokegrenade" };
+new const QTG_VMDLS[][] = { "models/v_CODhegrenade.mdl", "models/v_CODflashbang.mdl", "models/v_CODflashbang.mdl" };
+new const Float:TIME_PULLPIN[] = { 0.825, 0.825, 0.825 };
+new const Float:TIME_THROW[] = { 0.467, 0.833, 0.833 };
+new const THROWABLES_BPAMMO[] = { 12, 11, 13 };
 
 #define QUICKTHROW_KEY	541368
 
 #define ANIM_PULLPIN	1
 #define ANIM_THROW		2
-#define TIME_PULLPIN	0.825
-#define TIME_THROW		0.467
 
-#define HEG_AMMOTYPE		m_rgAmmo[12]
 #define HEG_DEF_EXPLO_TIME	2.0
 
 #define m_flTimePinPulled	currentammo	// It doesn't matter what the data type is. NOTE: current_ammo (offset 8) will cause CTD in ReGameDLL!
 #define m_FShouldHolster	maxammo_buckshot	// loan field. For holster after a quick throw.
 #define m_FShowUI			ammo_buckshot	// Hide UI if no cooking involved.
 
+
 #if defined SHOW_HINT_TEXT
 new g_hHudSyncObj = 0;
 #endif
 
-#if defined _orpheu_included
-new OrpheuFunction:g_pfn_ShootTimed2;
-new g_usEvent = 0;
-#endif
-
-new g_strQuickHEVMDL;
+new g_strQTGVMDLS[3];
+new g_rgiLastGrenadeSerial[33], g_rgiLastGrenadeItem[33];	// basically EHANDLE<CBasePlayerItem>
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
 	register_forward(FM_UpdateClientData, "fw_UpdateClientData_Post", true);
-	register_forward(FM_SetModel, "fw_SetModel_Post", true)
+	register_forward(FM_SetModel, "fw_SetModel_Post", true);
 	
 	register_clcmd("+qtg",	"Command_QTGStart");
 	register_clcmd("-qtg",	"Command_QTGRelease");
 	
-	RegisterHam(Ham_Item_Deploy, CLASSNAME_GRENADE, "HamF_Item_Deploy_Post", true);
-	RegisterHam(Ham_Weapon_PrimaryAttack, CLASSNAME_GRENADE, "HamF_Weapon_PrimaryAttack");
-	RegisterHam(Ham_Weapon_SecondaryAttack, CLASSNAME_GRENADE, "HamF_Weapon_SecondaryAttack");
-	RegisterHam(Ham_Weapon_WeaponIdle, CLASSNAME_GRENADE, "HamF_Weapon_WeaponIdle");
-	RegisterHam(Ham_Item_Holster, CLASSNAME_GRENADE, "HamF_Item_Holster_Post", true);
+	for (new i = 0; i < sizeof THROWABLES_CLASSNAME; ++i)
+	{
+		RegisterHam(Ham_Item_Deploy, THROWABLES_CLASSNAME[i], "HamF_Item_Deploy_Post", true);
+		RegisterHam(Ham_Weapon_PrimaryAttack, THROWABLES_CLASSNAME[i], "HamF_Weapon_PrimaryAttack");
+		RegisterHam(Ham_Weapon_SecondaryAttack, THROWABLES_CLASSNAME[i], "HamF_Weapon_SecondaryAttack");
+		RegisterHam(Ham_Weapon_WeaponIdle, THROWABLES_CLASSNAME[i], "HamF_Weapon_WeaponIdle");
+		RegisterHam(Ham_Item_Holster, THROWABLES_CLASSNAME[i], "HamF_Item_Holster_Post", true);
+	}
 
 #if defined SHOW_HINT_TEXT
 	g_hHudSyncObj = CreateHudSyncObj();
-#endif
-
-#if defined _orpheu_included
-	g_pfn_ShootTimed2 = OrpheuGetFunction("ShootTimed2");
 #endif
 }
 
 public plugin_precache()
 {
-	engfunc(EngFunc_PrecacheModel, QTG_VMDL);
-	
-	g_strQuickHEVMDL = engfunc(EngFunc_AllocString, QTG_VMDL);
-
-#if defined _orpheu_included
-	g_usEvent = engfunc(EngFunc_PrecacheEvent, 1, "events/createexplo.sc");
-#endif
+	for (new i = 0; i < sizeof QTG_VMDLS; ++i)
+	{
+		precache_model(QTG_VMDLS[i]);
+		g_strQTGVMDLS[i] = engfunc(EngFunc_AllocString, QTG_VMDLS[i]);
+	}
 }
 
 public fw_UpdateClientData_Post(iPlayer, iSendWeapon, hCD)
@@ -88,7 +93,8 @@ public fw_UpdateClientData_Post(iPlayer, iSendWeapon, hCD)
 	if (get_cd(hCD, CD_DeadFlag) != DEAD_NO)
 		return;
 	
-	if (get_cd(hCD, CD_ID) != CSW_HEGRENADE)
+	new iId = get_cd(hCD, CD_ID);
+	if (iId != CSW_HEGRENADE && iId != CSW_SMOKEGRENADE && iId != CSW_FLASHBANG)
 		return;
 	
 	new iEntity = get_pdata_cbase(iPlayer, m_pActiveItem);
@@ -110,7 +116,13 @@ public fw_SetModel_Post(iEntity, const szModel[])	// This is the last event you 
 	// 1. Throwing HE.
 	// 2. Dropping HE.
 	// 3. Armoury entity contains HE.
-	if (strcmp(szModel, "models/w_hegrenade.mdl"))
+	new iGrenadeType;
+	for (iGrenadeType = 0; iGrenadeType < sizeof THROWABLES_WORLD_MDL; ++iGrenadeType)
+	{
+		if (!strcmp(szModel, THROWABLES_WORLD_MDL[iGrenadeType]))
+			break;
+	}
+	if (iGrenadeType >= sizeof THROWABLES_WORLD_MDL)
 		return;
 	
 	new szClassname[32];
@@ -119,46 +131,76 @@ public fw_SetModel_Post(iEntity, const szModel[])	// This is the last event you 
 	if (strcmp(szClassname, "grenade"))
 		return;
 
-	new iGrenadePlayerItem = FindPlayerGrenadeEntity(pev(iEntity, pev_owner));
+	new iGrenadePlayerItem = FindPlayerGrenadeEntity(pev(iEntity, pev_owner), iGrenadeType);
 	if (pev_valid(iGrenadePlayerItem) != 2)
 		return;
 
-	new Float:flTimePinPulled = get_pdata_float(iGrenadePlayerItem, m_flTimePinPulled);
-	if (flTimePinPulled == 0.0)
-		flTimePinPulled = get_gametime();	// Supporting the fuse modification of vanilla grenade throwing method.
+	// One can only cook his he grenade
+	if (iGrenadeType == HEGRENADE)
+	{
+		new Float:flTimePinPulled = get_pdata_float(iGrenadePlayerItem, m_flTimePinPulled);
+		if (flTimePinPulled == 0.0)
+			flTimePinPulled = get_gametime();	// Supporting the fuse modification of vanilla grenade throwing method.
 
-	new Float:flCookingTime = get_gametime() - flTimePinPulled;
-	new Float:flDmgTime;
-	pev(iEntity, pev_dmgtime, flDmgTime);
+		new Float:flCookingTime = get_gametime() - flTimePinPulled;
+		new Float:flDmgTime;
+		pev(iEntity, pev_dmgtime, flDmgTime);
 
 #if !defined CUSTOM_FUSE_LEN
-	flDmgTime -= flCookingTime;
+		flDmgTime -= flCookingTime;
 #else
-	flDmgTime = get_gametime() + HEG_DEF_EXPLO_TIME - flCookingTime;
+		flDmgTime = get_gametime() + HEG_DEF_EXPLO_TIME - flCookingTime;
 #endif
-	set_pev(iEntity, pev_dmgtime, flDmgTime);	// Thus, this grenade could just explo on right on your face.
-	set_pev(iEntity, pev_nextthink, get_gametime() + 0.001);	// Originally it was set to 0.1.
 
-	// Only auto-holster if it's a quick throw.
-	if (get_pdata_float(iGrenadePlayerItem, m_flTimePinPulled) > 0.0)
+		if (flDmgTime < 0.01)
+			flDmgTime = 0.01;
+
+		set_pev(iEntity, pev_dmgtime, flDmgTime);	// Thus, this grenade could just explo on right on your face.
+		set_pev(iEntity, pev_nextthink, get_gametime() + 0.001);	// Originally it was set to 0.1.
+	}
+
+	// Flashbang has its auto-holster function included.
+	if (iGrenadeType == HEGRENADE || iGrenadeType == SMOKEGRENADE)
 	{
-		set_pdata_float(iGrenadePlayerItem, m_flTimePinPulled, 0.0, 4);	// Stop the custom progress bar.
-		set_task(TIME_THROW, "Task_HolsterGrenade", iGrenadePlayerItem + QUICKTHROW_KEY);	// In the case of multiple grenade ammo, it would stuck at the current item after quick throw.
+		// Only auto-holster if it's a quick throw.
+		if (get_pdata_float(iGrenadePlayerItem, m_flTimePinPulled) > 0.0)
+		{
+			set_pdata_int(iGrenadePlayerItem, m_FShowUI, false, 4);	// Stop the custom progress bar.
+			set_task(TIME_THROW[iGrenadeType], "Task_HolsterGrenade", iGrenadePlayerItem + QUICKTHROW_KEY);	// In the case of multiple grenade ammo, it would stuck at the current item after quick throw.
+		}
 	}
 }
 
 public Command_QTGStart(iPlayer)
 {
-	if (get_pdata_int(iPlayer, HEG_AMMOTYPE) <= 0)
+	// never QGT when player had already take it out.
+	if (GetGrenadeType(get_pdata_cbase(iPlayer, m_pActiveItem)) != NOT_THROWABLE)
 		return PLUGIN_HANDLED;
-	
-	new iEntity = FindPlayerGrenadeEntity(iPlayer);
-	
-	if (get_pdata_cbase(iPlayer, m_pActiveItem) == iEntity)	// never QGT when player had already take it out.
-		return PLUGIN_HANDLED;
-	
+
+	/*
+	1. Is last item a grenade?
+	2. Select the first item in slot 4
+	*/
+
+	new iEntity = GetLastGrenade(iPlayer);
+	new iGrenadeType = GetGrenadeType(iEntity);
+
+	// This is not a grenade item, select the first item in slot 4.
+	if (iGrenadeType == NOT_THROWABLE)
+	{
+		for (iGrenadeType = 0; get_pdata_int(iPlayer, m_rgAmmo[THROWABLES_BPAMMO[iGrenadeType]]) <= 0; ++iGrenadeType)
+		{
+			// Player has no grenade.
+			if (iGrenadeType >= sizeof THROWABLES_CLASSNAME)
+				return PLUGIN_HANDLED;
+		}
+	}
+
+	iEntity = FindPlayerGrenadeEntity(iPlayer, iGrenadeType);
+	client_print(iPlayer, print_chat, "Selected: %s", THROWABLES_CLASSNAME[iGrenadeType]);
+
 	set_pev(iEntity, pev_iuser4, QUICKTHROW_KEY);
-	engclient_cmd(iPlayer, CLASSNAME_GRENADE);
+	engclient_cmd(iPlayer, THROWABLES_CLASSNAME[iGrenadeType]);
 	return PLUGIN_HANDLED;
 }
 
@@ -168,7 +210,7 @@ public Command_QTGRelease(iPlayer)
 	if (pev_valid(iEntity) != 2)
 		return PLUGIN_HANDLED;
 
-	if (get_pdata_int(iEntity, m_iId, 4) != CSW_HEGRENADE)
+	if (GetGrenadeType(iEntity) == NOT_THROWABLE)
 		return PLUGIN_HANDLED;
 
 	set_pdata_int(iEntity, m_FShowUI, false);
@@ -178,33 +220,40 @@ public Command_QTGRelease(iPlayer)
 
 public HamF_Item_Deploy_Post(iEntity)
 {
+	new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, 4);
+	SetLastGrenade(iPlayer, iEntity);	// record the 'last' in a special way.
+
 	if (pev(iEntity, pev_iuser4) != QUICKTHROW_KEY)
 		return;
-	
-	new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, 4);
-	set_pev(iPlayer, pev_viewmodel, g_strQuickHEVMDL);
-	
-	UTIL_ForceWeaponAnim(iPlayer, iEntity, TIME_PULLPIN);
+
+	new iGrenadeType = GetGrenadeType(iEntity);
+
+	set_pev(iPlayer, pev_viewmodel, g_strQTGVMDLS[iGrenadeType]);
+
+	UTIL_ForceWeaponAnim(iPlayer, iEntity, TIME_PULLPIN[iGrenadeType]);
 	UTIL_WeaponAnim(iPlayer, ANIM_PULLPIN);
-	
+
 	set_pev(iEntity, pev_iuser4, 0);	// LUNA: why would I did this before?? - for the prediction, or it will have no animation.
 	set_pev(iEntity, pev_iuser3, QUICKTHROW_KEY);	// lock CHEGrenade::WeaponIdle(void)
-	
+
 	// reference: CHEGrenade::PrimaryAttack(void)
-	
+
 	set_pdata_float(iEntity, m_flStartThrow, get_gametime(), 4);
 	set_pdata_float(iEntity, m_flReleaseThrow, 0.0, 4);
-	set_pdata_float(iEntity, m_flTimeWeaponIdle, TIME_PULLPIN, 4);
+	set_pdata_float(iEntity, m_flTimeWeaponIdle, TIME_PULLPIN[iGrenadeType], 4);
 
 	// Record the current time for this grenade to "cook up". With a bit of time being offset.
-	set_pdata_float(iEntity, m_flTimePinPulled, get_gametime() + TIME_PULLPIN, 4);
+	set_pdata_float(iEntity, m_flTimePinPulled, get_gametime() + TIME_PULLPIN[iGrenadeType], 4);
 	set_pdata_int(iEntity, m_FShouldHolster, false);
 	set_pdata_int(iEntity, m_FShowUI, true);
+
+	// Stop protection as the VMDL doesn't included a shield.
+	SetShieldHitgroup(iPlayer, false);
 }
 
 public HamF_Weapon_PrimaryAttack(iEntity)
 {
-	if (pev(iEntity, pev_iuser4) == QUICKTHROW_KEY)
+	if (get_pdata_float(iEntity, m_flTimePinPulled) != 0.0)
 		return HAM_SUPERCEDE;
 
 	return HAM_IGNORED;
@@ -212,7 +261,7 @@ public HamF_Weapon_PrimaryAttack(iEntity)
 
 public HamF_Weapon_SecondaryAttack(iEntity)
 {
-	if (pev(iEntity, pev_iuser4) == QUICKTHROW_KEY)
+	if (get_pdata_float(iEntity, m_flTimePinPulled) != 0.0)
 		return HAM_SUPERCEDE;
 
 	return HAM_IGNORED;
@@ -222,29 +271,17 @@ public HamF_Weapon_WeaponIdle(iEntity)
 {
 	new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, 4);
 	new Float:flTimePinPulled = get_pdata_float(iEntity, m_flTimePinPulled);
+	new iGrenadeType = GetGrenadeType(iEntity);
 
-	if (flTimePinPulled != 0.0)
+	// One can only cook he grenade
+	if (iGrenadeType == HEGRENADE && flTimePinPulled != 0.0)
 	{
 		new Float:flCookingTime = get_gametime() - flTimePinPulled;
 
 		if (flCookingTime >= HEG_DEF_EXPLO_TIME)
 		{
-#if defined _orpheu_included
-			new Float:vecOrigin[3], Float:vecVelocity[3];
-			pev(iPlayer, pev_origin, vecOrigin);
-			pev(iPlayer, pev_view_ofs, vecVelocity);
-			xs_vec_add(vecOrigin, vecVelocity, vecOrigin);
-			pev(iPlayer, pev_velocity, vecVelocity);
-
-			// Spawn a grenade exploded on player's face.
-			ShootTimed2(iPlayer, vecOrigin, vecVelocity, 0.01, get_pdata_int(iPlayer, m_iTeam), g_usEvent);
-
-			set_pdata_int(iPlayer, HEG_AMMOTYPE, max(0, get_pdata_int(iPlayer, HEG_AMMOTYPE) - 1));
-			UTIL_RemovePlayerWeapon(iPlayer, iEntity);
-#else
 			// I can't make a grenade explode on my face without orpheu module support.
 			engclient_cmd(iPlayer, "lastinv");
-#endif
 
 			return HAM_SUPERCEDE;
 		}
@@ -298,6 +335,12 @@ public HamF_Weapon_WeaponIdle(iEntity)
 
 public HamF_Item_Holster_Post(iEntity)
 {
+	new iPlayer = get_pdata_cbase(iEntity, m_pPlayer, XO_CBASEPLAYERITEM);
+
+	// Is using quick throw?
+	if (get_pdata_float(iEntity, m_flTimePinPulled) > 0.0 && get_pdata_bool(iPlayer, m_bOwnsShield))
+		SetShieldHitgroup(iPlayer, true);
+
 	set_pev(iEntity, pev_iuser3, 0);
 	set_pev(iEntity, pev_iuser4, 0);
 	set_pdata_float(iEntity, m_flTimePinPulled, 0.0, 4);
@@ -318,10 +361,10 @@ public Task_HolsterGrenade(iEntity)
 	}
 }
 
-FindPlayerGrenadeEntity(iPlayer)
+FindPlayerGrenadeEntity(iPlayer, iGrenadeType = HEGRENADE)
 {
 	new iEntity = -1;
-	while ((iEntity = engfunc(EngFunc_FindEntityByString, iEntity, "classname", CLASSNAME_GRENADE)))
+	while ((iEntity = engfunc(EngFunc_FindEntityByString, iEntity, "classname", THROWABLES_CLASSNAME[iGrenadeType])))
 	{
 		if (pev_valid(iEntity) != 2)
 			continue;
@@ -336,18 +379,52 @@ FindPlayerGrenadeEntity(iPlayer)
 	return iEntity;
 }
 
-#if defined _orpheu_included
-ShootTimed2(iPlayer, const Float:vecOrigin[3], const Float:vecVelocity[3], Float:flFuseTime, iTeam, usEvent)
+GetGrenadeType(iWeapon)
 {
-	return OrpheuCallSuper(g_pfn_ShootTimed2,
-		iPlayer,
-		vecOrigin[0], vecOrigin[1], vecOrigin[2],
-		vecVelocity[0], vecVelocity[1], vecVelocity[2],
-		flFuseTime,
-		iTeam,
-		usEvent);
+	if (pev_valid(iWeapon) != 2)
+		return NOT_THROWABLE;
+
+	switch (get_pdata_int(iWeapon, m_iId, XO_CBASEPLAYERITEM))
+	{
+		case CSW_HEGRENADE:
+			return HEGRENADE;
+		case CSW_FLASHBANG:
+			return FLASHBANG;
+		case CSW_SMOKEGRENADE:
+			return SMOKEGRENADE;
+
+		default:
+			return NOT_THROWABLE;
+	}
+
+	return NOT_THROWABLE;	// unreachable.
 }
-#endif
+
+SetLastGrenade(iPlayer, iWeapon)
+{
+	g_rgiLastGrenadeItem[iPlayer] = iWeapon;
+	g_rgiLastGrenadeSerial[iPlayer] = pev_serial(iWeapon);
+}
+
+GetLastGrenade(iPlayer)
+{
+	if (pev_valid(g_rgiLastGrenadeItem[iPlayer]) != 2)
+		return -1;
+
+	if (pev_serial(g_rgiLastGrenadeItem[iPlayer]) != g_rgiLastGrenadeSerial[iPlayer])
+		return -1;
+
+	new iGrenadeType = GetGrenadeType(g_rgiLastGrenadeItem[iPlayer]);
+	if (iGrenadeType == NOT_THROWABLE)
+		return -1;
+
+	// In case the last one was thrown and only a 'shell' item left.
+	new iBpAmmoOfs = m_rgAmmo[THROWABLES_BPAMMO[iGrenadeType]];
+	if (get_pdata_int(iPlayer, iBpAmmoOfs) <= 0)
+		return -1;
+
+	return g_rgiLastGrenadeItem[iPlayer];
+}
 
 stock UTIL_WeaponAnim(id, iAnim)
 {
@@ -375,10 +452,8 @@ stock UTIL_RemovePlayerWeapon(iPlayer, iEntity)
 	set_pev(iPlayer, pev_weapons, pev(iPlayer, pev_weapons) & ~(1<<get_pdata_int(iEntity, m_iId, 4)));
 }
 
-
-
-
-
-
-
-
+stock SetShieldHitgroup(iPlayer, bool:bEnabled)
+{
+	// 0 - has shield, 1 - no shield
+	set_pev(iPlayer, pev_gamestate, !bEnabled);
+}
