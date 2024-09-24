@@ -7,7 +7,7 @@
 #include <xs>
 
 #define PLUGIN		"Grenade Quick Throw"
-#define VERSION		"1.3.2"
+#define VERSION		"1.3.3"
 #define AUTHOR		"Luna(plugin) & Matoilet(model)"
 
 /**--------------Configuration: Show a customized progress bar during cooking process?*/
@@ -30,7 +30,7 @@
 #define TIME_THROW		0.467
 
 #define HEG_AMMOTYPE		m_rgAmmo[12]
-#define HEG_DEF_EXPLO_TIME	1.5
+#define HEG_DEF_EXPLO_TIME	2.0
 
 #define m_flTimePinPulled	currentammo	// It doesn't matter what the data type is. NOTE: current_ammo (offset 8) will cause CTD in ReGameDLL!
 #define m_FShouldHolster	maxammo_buckshot	// loan field. For holster after a quick throw.
@@ -254,9 +254,11 @@ public HamF_Weapon_WeaponIdle(iEntity)
 		{
 			new szText[64];
 			new Float:flPercentageToOverCook = flCookingTime / HEG_DEF_EXPLO_TIME;
-			new iDotNum = floatround(flPercentageToOverCook * 20.0);
-			new iLineNum = max(20 - iDotNum, 0);
+			new iDotNum = floatround(flPercentageToOverCook * 21.0);
+			new iLineNum = max(21 - iDotNum, 0);
 			new Float:flFrameTime; global_get(glb_frametime, flFrameTime);
+
+			formatex(szText, charsmax(szText), "         %.1f         ^n", HEG_DEF_EXPLO_TIME - flCookingTime);
 
 			for (new i = 0; i < iLineNum; i++)
 				strcat(szText, "|", charsmax(szText));
