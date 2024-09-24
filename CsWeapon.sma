@@ -5,18 +5,18 @@
 #include <hamsandwich>
 #include <offset>
 
+#include <Uranus>
 #include <cstrike_pdatas/pdatas_stocks>
 #include "Library/LibWeapons.sma"
 
 #pragma semicolon 1
 
 #define PLUGIN		"CS Weapons"
-#define VERSION		"1.0.1"
+#define VERSION		"1.1.0"
 #define AUTHOR		"xhsu"
 
 #define WEAPON_LIST_TASK_ID	5156438
 
-native Uranus_DropShield(iPlayer);
 
 new g_rgiCurIndex[33];
 
@@ -65,7 +65,7 @@ public fw_ClientCommand(iPlayer)
 
 		if (iMoney < WEAPON_CS_COST[i])
 		{
-			UTIL_TestMsg(iPlayer, print_center, "#Not_Enough_Money");
+			UTIL_TextMsg(iPlayer, print_center, "#Not_Enough_Money");
 			UTIL_BlinkAccount(iPlayer, 2);
 			return FMRES_SUPERCEDE;
 		}
@@ -93,10 +93,11 @@ public fw_ClientCommand(iPlayer)
 
 		if (HasWeapon(iPlayer, i))
 		{
-			client_print(iPlayer, print_center, "你已經有一把%s了!", WEAPON_NAME[i]);
+			UTIL_TextMsg(iPlayer, print_center, "#Cstrike_Already_Own_Weapon");
 			return FMRES_SUPERCEDE;
 		}
 
+		// #BUGBUG somehow bugged, if player trys to buy a prim weapon when he has two pistols and a shield.
 		DropFirearmIfNecessary(iPlayer);
 
 		new iWeapon = -1;
@@ -110,7 +111,7 @@ public fw_ClientCommand(iPlayer)
 			set_pdata_int(iPlayer, m_iAccount, iMoney - WEAPON_CS_COST[i]);
 			UTIL_RefreshAccount(iPlayer);
 
-			if (WEAPON_SLOT[i] == 1 && get_pdata_bool(iPlayer, m_bOwnsShield))
+			if ((WEAPON_SLOT[i] == 1 || i == CSW_ELITE) && get_pdata_bool(iPlayer, m_bOwnsShield))
 			{
 				Uranus_DropShield(iPlayer);
 			}
@@ -146,6 +147,35 @@ public fw_ClientCommand(iPlayer)
 		return FMRES_SUPERCEDE;
 	}
 
+	// Handle shield
+
+	else if (!strcmp(szCommand, "shield"))
+	{
+		if (get_pdata_bool(iPlayer, m_bOwnsShield))
+		{
+			UTIL_TextMsg(iPlayer, print_center, "#Cstrike_Already_Own_Weapon");
+			return FMRES_SUPERCEDE;
+		}
+
+		new iMoney = get_pdata_int(iPlayer, m_iAccount);
+
+		if (iMoney < 2200)
+		{
+			UTIL_TextMsg(iPlayer, print_center, "#Not_Enough_Money");
+			UTIL_BlinkAccount(iPlayer, 2);
+			return FMRES_SUPERCEDE;
+		}
+
+		DropWeapons(iPlayer, 1);
+		engclient_cmd(iPlayer, "drop", WEAPON_CLASSNAME[CSW_ELITE]);
+
+		emit_sound(iPlayer, CHAN_ITEM, "items/gunpickup2.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		GiveUserShield(iPlayer);
+
+		set_pdata_int(iPlayer, m_iAccount, iMoney - 2200);
+		UTIL_RefreshAccount(iPlayer);
+	}
+
 	return FMRES_IGNORED;
 }
 
@@ -173,7 +203,7 @@ BuyWeaponAmmo(iPlayer, iWeapon)
 
 	if (iAmmoMost_Cost == 0)
 	{
-		UTIL_TestMsg(iPlayer, print_center, "#Not_Enough_Money");
+		UTIL_TextMsg(iPlayer, print_center, "#Not_Enough_Money");
 		UTIL_BlinkAccount(iPlayer, 2);
 		return;
 	}
@@ -215,7 +245,7 @@ GiveClip(iPlayer, iWeapon, bool:bFree = false)
 		new iMoney = get_pdata_int(iPlayer, m_iAccount);
 		if (iMoney < iCost)
 		{
-			UTIL_TestMsg(iPlayer, print_center, "#Not_Enough_Money");
+			UTIL_TextMsg(iPlayer, print_center, "#Not_Enough_Money");
 			UTIL_BlinkAccount(iPlayer, 2);
 			return 0;
 		}
@@ -251,7 +281,7 @@ stock UTIL_BlinkAccount(iPlayer, iBlinkTimes)
 	emessage_end();
 }
 
-stock UTIL_TestMsg(iPlayer, dest, const szMessage[])
+stock UTIL_TextMsg(iPlayer, dest, const szMessage[])
 {
 	static gmsgTextMsg;
 	if (!gmsgTextMsg)

@@ -5,12 +5,16 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
-#include <offset>
 #include <xs>
 
+#include <offset>
 #tryinclude <cstrike_pdatas/pdatas_stocks>
 
+#include <Uranus>
+
 #include "Library/LibWeapons.sma"
+
+#pragma semicolon 1
 
 #if !defined _pdatas_stocks_included
 		#assert Cstrike Pdatas and Offsets library required! Read the below instructions:   \
@@ -21,7 +25,7 @@
 #endif
 
 #define PLUGIN		"E鍵撿槍"
-#define VERSION		"2.2.9 CSMW:ZR"
+#define VERSION		"2.3.0 CSMW:ZR"
 #define AUTHOR		"Luna the Reborn(xhsu)"
 
 /**--------------編譯選項：是否啟用提示文字？*/
@@ -54,6 +58,10 @@ public plugin_init()
 	RegisterHam(Ham_ObjectCaps, "weaponbox", "HamF_ObjectCaps");
 	RegisterHam(Ham_Use, "weaponbox", "HamF_Use");
 	RegisterHam(Ham_Think, "weaponbox", "HamF_Think");
+
+	RegisterHam(Ham_Touch, "weapon_shield", "HamF_WShield_Touch");
+	RegisterHam(Ham_ObjectCaps, "weapon_shield", "HamF_WShield_ObjectCaps");
+	RegisterHam(Ham_Use, "weapon_shield", "HamF_WShield_Use");
 
 #if defined DROP_AMMO_AS_WELL
 	register_forward(FM_SetModel, "fw_SetModel_Post", true);
@@ -134,11 +142,12 @@ public HamF_Touch(iEntity, iPlayer)
 	new bool:bShowSeizeAmmoHint = !!(get_pdata_int(iPlayer, m_rgAmmo[iAmmoId], XO_CBASEPLAYER) < GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoId));
 	new bool:bOwnsShield = get_pdata_bool(iPlayer, m_bOwnsShield, XO_CBASEPLAYER);
 
-	if (bOwnsShield && iSlot == 1)
+	if (bOwnsShield && (iSlot == 1 || iWeaponId == CSW_ELITE))
 	{
-		// Can only grab the ammo. You can't own both a shield and a rifle. That's OP.
 		if (bShowSeizeAmmoHint)
-			ShowSyncHudMsg(iPlayer, g_msgSync, "按住［使用鍵］獲取［%s］彈藥", AMMO_NAME[iAmmoId]);
+			ShowSyncHudMsg(iPlayer, g_msgSync, "按下［使用鍵］將［防爆盾］替換為［%s］^n按住［使用鍵］獲取［%s］彈藥", WEAPON_NAME[iWeaponId], AMMO_NAME[iAmmoId]);
+		else
+			ShowSyncHudMsg(iPlayer, g_msgSync, "按下［使用鍵］將［防爆盾］替換為［%s］", WEAPON_NAME[iWeaponId]);
 	}
 	else if (HasWeapon(iPlayer, iWeaponId))
 	{
@@ -266,15 +275,16 @@ public HamF_Use(iEntity, iCaller, iActivator, iUseType, Float:flValue)
 	}
 
 	new iWeaponInBox = RevealWeaponFromWeaponBox(iEntity);
+	new iWeaponIdInBox = get_pdata_int(iWeaponInBox, m_iId, XO_CBASEPLAYERITEM);
 	new iSlot = ExecuteHamB(Ham_Item_ItemSlot, iWeaponInBox);
 
-	if (get_pdata_bool(iPlayer, m_bOwnsShield, XO_CBASEPLAYER) && iSlot == 1)
+	if (get_pdata_bool(iPlayer, m_bOwnsShield, XO_CBASEPLAYER) && (iSlot == 1 || iWeaponIdInBox == CSW_ELITE))
 	{
-		// You can't grab any primary weapon if you already owns a shield.
-		goto LAB_HAMF_USE_LAST;
+		// Drop shield, so we can get back to normal flow.
+		Uranus_DropShield(iPlayer);
 	}
 
-	if (HasWeapon(iPlayer, get_pdata_int(iWeaponInBox, m_iId, XO_CBASEPLAYERITEM)))
+	if (HasWeapon(iPlayer, iWeaponIdInBox))
 	{
 		ExtractAmmunitionFromWeaponBox(iEntity, iPlayer, false);
 	}
@@ -323,7 +333,6 @@ public HamF_Use(iEntity, iCaller, iActivator, iUseType, Float:flValue)
 		ExtractItemsFromWeaponBox(iEntity, iPlayer);
 	}
 
-LAB_HAMF_USE_LAST:
 	// HACKHACK
 	// Restore VIP identity before we leave.
 	set_pdata_bool(iPlayer, m_bIsVIP, bIsVIP, XO_CBASEPLAYER);
@@ -357,6 +366,82 @@ public HamF_Think(iEntity)
 	}
 	else if (flTimeStartUsing > 0.0)
 		set_pev(iEntity, pev_nextthink, get_gametime() + 0.01);
+
+	return HAM_SUPERCEDE;
+}
+
+//
+// CWShield, weapon_shield
+//
+
+public HamF_WShield_Touch(iEntity, iPlayer)
+{
+	if (pev_valid(iEntity) != 2 || !is_user_alive(iPlayer) || is_user_bot(iPlayer))
+		return HAM_IGNORED;
+
+	if (!(pev(iEntity, pev_flags) & FL_ONGROUND))
+		return HAM_SUPERCEDE;
+
+#if defined SHOW_PICKUP_HINT
+
+	set_hudmessage(0, 200, 0, -1.0, 0.64, 0, 6.0, 0.2, 0.0, 0.0, -1);
+
+	new szMessage[128];
+	szMessage = "按下［使用鍵］將";
+	// formatex(szMessage, charsmax(szMessage), );
+
+	new bool:bHasPrimary = false;
+	new iMyWeapon = get_pdata_cbase(iPlayer, m_rgpPlayerItems[1], XO_CBASEPLAYER);
+	for (; pev_valid(iMyWeapon) == 2; iMyWeapon = get_pdata_cbase(iMyWeapon, m_pNext, XO_CBASEPLAYERITEM))
+	{
+		bHasPrimary = true;
+		strcat(szMessage, "［", charsmax(szMessage));
+		strcat(szMessage, WEAPON_NAME[get_pdata_int(iMyWeapon, m_iId, XO_CBASEPLAYERITEM)], charsmax(szMessage));
+		strcat(szMessage, "］", charsmax(szMessage));
+	}
+
+	// I almost forgot this one...
+	if (pev(iPlayer, pev_weapons) & (1 << CSW_ELITE))
+	{
+		bHasPrimary = true;
+		strcat(szMessage, "［", charsmax(szMessage));
+		strcat(szMessage, WEAPON_NAME[CSW_ELITE], charsmax(szMessage));
+		strcat(szMessage, "］", charsmax(szMessage));
+	}
+
+	if (bHasPrimary)
+		strcat(szMessage, "替換為［防爆盾］", charsmax(szMessage));
+	else
+		szMessage = "按下［使用鍵］拾起［防爆盾］";
+
+	ShowSyncHudMsg(iPlayer, g_msgSync, szMessage);
+
+#endif
+
+	return HAM_SUPERCEDE;
+}
+
+public HamF_WShield_ObjectCaps(iEntity)
+{
+	SetHamReturnInteger(FCAP_ACROSS_TRANSITION | FCAP_IMPULSE_USE);
+	return HAM_SUPERCEDE;
+}
+
+public HamF_WShield_Use(iEntity, iCaller, iActivator, iUseType, Float:flValue)
+{
+	// It doesn't matter, both caller and activator are the player who wants to pick it up.
+	// Reference: CBasePlayer::PlayerUse()
+	new iPlayer = iActivator;
+
+	// Get rid of all primary weapons in slot1.
+	DropWeapons(iPlayer, 1);
+	engclient_cmd(iPlayer, "drop", WEAPON_CLASSNAME[CSW_ELITE]);
+
+	GiveUserShield(iPlayer);
+	emit_sound(iEntity, CHAN_ITEM, "items/gunpickup2.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+
+	// Remove dropped shield.
+	set_pev(iEntity, pev_nextthink, get_gametime() + 0.001);
 
 	return HAM_SUPERCEDE;
 }

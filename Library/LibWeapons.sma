@@ -322,7 +322,11 @@ stock DropWeapons(iPlayer, iSlot)
 	// Treat shield specially.
 	if (iSlot == 1 && get_pdata_bool(iPlayer, m_bOwnsShield, XO_CBASEPLAYER))
 	{
+#if defined _orpheu_included
 		DropShield(iPlayer);
+#elseif defined _uranus_lib
+		Uranus_DropShield(iPlayer);
+#endif
 		return;
 	}
 
@@ -334,7 +338,9 @@ stock DropWeapons(iPlayer, iSlot)
 		
 		engclient_cmd(iPlayer, "drop", szClassname);
 		
-		iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
+		// After the drop call, the m_pNext would be set to nullptr, like any sensible list.
+		// So we just need to catch the head of the list.
+		iWeapon = get_pdata_cbase(iPlayer, m_rgpPlayerItems[iSlot], XO_CBASEPLAYER);
 	}
 	
 	set_pdata_cbase(iPlayer, m_rgpPlayerItems[0], -1, XO_CBASEPLAYER);	// -1 is nullptr in Hamsandwich.
@@ -347,7 +353,7 @@ stock DropFirearmIfNecessary(iPlayer)
 		cvar_maxweapon = get_cvar_pointer("uktpg_MaxiumTotalWeaponCounts");
 	
 	if (cvar_maxweapon <= 0)
-		return false;
+		return 0;
 	
 	new iLimit = get_pcvar_num(cvar_maxweapon) - 1;	// Assume you will add a weapon after this call.
 	new iWeaponCounts, iSlotCounts[3] = {0, 0, 0};
@@ -355,7 +361,7 @@ stock DropFirearmIfNecessary(iPlayer)
 	CountFirearms(iPlayer, iWeaponCounts, iSlotCounts);
 
 	if (iWeaponCounts <= iLimit)
-		return false;
+		return 0;
 	
 	new iActiveItem = get_pdata_cbase(iPlayer, m_pActiveItem, XO_CBASEPLAYER);
 	new iActiveItemSlot = ExecuteHamB(Ham_Item_ItemSlot, iActiveItem);
@@ -385,7 +391,7 @@ stock DropFirearmIfNecessary(iPlayer)
 	if (iId)
 		engclient_cmd(iPlayer, "drop", WEAPON_CLASSNAME[iId]);
 	
-	return !!(iId > 0);
+	return iId;
 }
 
 stock GiveItem(iPlayer, const szClassname[], iSpecialCode = 0)
@@ -485,13 +491,13 @@ stock GiveUserShield(iPlayer)
 	set_pdata_bool(iPlayer, m_bHasPrimary, true, XO_CBASEPLAYER);
 
 	// NOTE: Moved above, because CC4::Deploy can reset hitbox of shield.
-	set_pev(iPlayer, pev_gamestate, HITGROUP_SHIELD_ENABLED);
+	SetShieldHitgroup(iPlayer, true);
 
 	new iActiveItem = get_pdata_cbase(iPlayer, m_pActiveItem, XO_CBASEPLAYER);
 	if (iActiveItem > 0)
 	{
 		new ammoIndex = get_pdata_int(iActiveItem, m_iPrimaryAmmoType, XO_CBASEPLAYERWEAPON);
-		if (ammoIndex > 0 && get_pdata_int(iPlayer, m_rgAmmo_CBasePlayer[ammoIndex], XO_CBASEPLAYER) > 0)
+		if (ammoIndex > 0 && get_pdata_int(iPlayer, m_rgAmmo[ammoIndex], XO_CBASEPLAYER) > 0)
 		{
 			ExecuteHamB(Ham_Item_Holster, iActiveItem, 0);
 		}
@@ -510,7 +516,7 @@ stock RemoveUserShield(iPlayer)
 		set_pdata_bool(iPlayer, m_bOwnsShield, false, XO_CBASEPLAYER);
 		set_pdata_bool(iPlayer, m_bHasPrimary, false, XO_CBASEPLAYER);
 		set_pdata_bool(iPlayer, m_bShieldDrawn, false, XO_CBASEPLAYER);
-		set_pev(iPlayer, pev_gamestate, HITGROUP_SHIELD_DISABLED);
+		SetShieldHitgroup(iPlayer, false);
 
 		new iHideHUD = get_pdata_int(iPlayer, m_iHideHUD, XO_CBASEPLAYER);
 		if (iHideHUD & HIDEHUD_CROSSHAIR)
@@ -576,6 +582,12 @@ stock CountFirearms(iPlayer, &iWeaponCounts, iSlotCounts[])
 			iWeapon = get_pdata_cbase(iWeapon, m_pNext, XO_CBASEPLAYERITEM);
 		}
 	}
+}
+
+stock SetShieldHitgroup(iPlayer, bool:bEnabled)
+{
+	// 0 - has shield, 1 - no shield
+	set_pev(iPlayer, pev_gamestate, !bEnabled);
 }
 
 //
