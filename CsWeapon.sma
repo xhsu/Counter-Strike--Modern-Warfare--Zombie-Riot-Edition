@@ -12,7 +12,7 @@
 #pragma semicolon 1
 
 #define PLUGIN		"CS Weapons"
-#define VERSION		"1.1.0"
+#define VERSION		"1.1.1"
 #define AUTHOR		"xhsu"
 
 #define WEAPON_LIST_TASK_ID	5156438
@@ -124,7 +124,9 @@ public fw_ClientCommand(iPlayer)
 
 	if (!strcmp(szCommand, "buyammo1"))
 	{
-		if (GiveClipInSlot(iPlayer, 1))
+		new iSlot = get_pdata_bool(iPlayer, m_bOwnsShield) ? 2 : 1;
+
+		if (GiveClipInSlot(iPlayer, iSlot))
 			engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
 		return FMRES_SUPERCEDE;
@@ -138,7 +140,9 @@ public fw_ClientCommand(iPlayer)
 	}
 	else if (!strcmp(szCommand, "primammo"))
 	{
-		BuyAmmoInSlot(iPlayer, 1);
+		new iSlot = get_pdata_bool(iPlayer, m_bOwnsShield) ? 2 : 1;
+
+		BuyAmmoInSlot(iPlayer, iSlot);
 		return FMRES_SUPERCEDE;
 	}
 	else if (!strcmp(szCommand, "secammo"))

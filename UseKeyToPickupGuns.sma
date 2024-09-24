@@ -1,7 +1,5 @@
 /* Header Template by Devzone */
 
-#define NULL	0
-
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
