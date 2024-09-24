@@ -11,7 +11,7 @@
 #pragma semicolon 1
 
 #define PLUGIN		"CS Weapons"
-#define VERSION		"1.0.0"
+#define VERSION		"1.0.1"
 #define AUTHOR		"xhsu"
 
 #define WEAPON_LIST_TASK_ID	5156438
@@ -165,7 +165,7 @@ BuyWeaponAmmo(iPlayer, iWeapon)
 	new Float:flMoney = float(get_pdata_int(iPlayer, m_iAccount));
 	new iId = get_pdata_int(iWeapon, m_iId);
 	new iAmmoId = WEAPON_BPAMMO_INDEX[iId];
-	new iAmmoMost_Cap = AMMO_MAX_CAPACITY[iAmmoId] - get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]);
+	new iAmmoMost_Cap = GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoId) - get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]);
 	new iAmmoMost_Cost = floatround(flMoney / AMMO_ZR_COST_PER_BULLET[iAmmoId], floatround_tozero);
 
 	if (iAmmoMost_Cap == 0)
@@ -204,7 +204,7 @@ GiveClip(iPlayer, iWeapon, bool:bFree = false)
 {
 	new iId = get_pdata_int(iWeapon, m_iId);
 	new iAmmoId = WEAPON_BPAMMO_INDEX[iId];
-	new iClip = min(get_pdata_int(iWeapon, m_iClip), AMMO_MAX_CAPACITY[iAmmoId] - get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]));
+	new iClip = min(WEAPON_MAXCLIP[iId], GetMaxAmmoStockpileWithBuffer(iPlayer, iAmmoId) - get_pdata_int(iPlayer, m_rgAmmo[iAmmoId]));
 	new iCost = floatround(AMMO_ZR_COST_PER_BULLET[iAmmoId] * float(iClip));
 
 	if (iClip <= 0)
