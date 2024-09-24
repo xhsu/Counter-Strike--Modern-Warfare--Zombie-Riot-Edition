@@ -12,7 +12,7 @@
 #pragma semicolon 1
 
 #define PLUGIN		"CS Weapons"
-#define VERSION		"1.1.1"
+#define VERSION		"1.2.0"
 #define AUTHOR		"xhsu"
 
 #define WEAPON_LIST_TASK_ID	5156438
@@ -25,6 +25,8 @@ public plugin_init()
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	register_forward(FM_ClientCommand, "fw_ClientCommand");
+
+	register_clcmd("lastinv", "Command_LastInv");
 }
 
 public client_putinserver(iPlayer)
@@ -199,6 +201,37 @@ public fw_ClientCommand(iPlayer)
 	}
 
 	return FMRES_IGNORED;
+}
+
+public Command_LastInv(iPlayer)
+{
+	if (!is_user_alive(iPlayer))
+		return PLUGIN_CONTINUE;
+
+	new iCurWeapon = get_pdata_cbase(iPlayer, m_pActiveItem);
+	new iSwitchTo = -1;
+
+	for (new i = 1; i <= 3; ++i)
+	{
+		iSwitchTo = get_pdata_cbase(iPlayer, m_rgpPlayerItems[i]);
+		while (pev_valid(iSwitchTo) == 2 && iSwitchTo == iCurWeapon)
+		{
+			iSwitchTo = get_pdata_cbase(iSwitchTo, m_pNext, XO_CBASEPLAYERITEM);
+		}
+
+		if (pev_valid(iSwitchTo) == 2 && iSwitchTo != iCurWeapon)
+			break;
+	}
+
+	if (pev_valid(iSwitchTo) != 2 || iSwitchTo == iCurWeapon)
+		return PLUGIN_CONTINUE;
+
+	new szWeaponClass[32];
+	pev(iSwitchTo, pev_classname, szWeaponClass, charsmax(szWeaponClass));
+
+	engclient_cmd(iPlayer, szWeaponClass);
+
+	return PLUGIN_HANDLED;
 }
 
 BuyAmmoInSlot(iPlayer, iSlot)
