@@ -12,7 +12,7 @@
 #pragma semicolon 1
 
 #define PLUGIN		"Passive Healing"
-#define VERSION		"1.1.1"
+#define VERSION		"1.1.2"
 #define AUTHOR		"xhsu"
 
 // Spectator Movement modes (stored in pev->iuser1, so the physics code can get at them)
@@ -62,7 +62,7 @@ public fw_PlayerPostThink_Post(iPlayer)
 		if (flCurHealth > flMaxHealth)
 		{
 			flCurHealth = flMaxHealth;
-			UTIL_ScreenFade(iPlayer, 0.3, 0.0, FFADE_IN, 0x98, 0xF5, 0x4B, 48);
+			UTIL_ScreenFade(iPlayer, 0.3, 0.0, FFADE_IN, 0x98, 0xF5, 0x4B, 32);
 		}
 
 		set_pev(iPlayer, pev_health, flCurHealth);
@@ -104,6 +104,11 @@ public HamF_Spawn_Post(iPlayer)
 
 public HamF_TakeDamage_Post(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamageTypes)
 {
+	new bool:bIsDamaged;
+	GetHamReturnInteger(bIsDamaged);
+	if (!bIsDamaged)
+		return;
+
 	g_flNextHealing[iVictim] = get_gametime() + 5.0;
 	g_flShouldDoFx[iVictim] = true;
 }

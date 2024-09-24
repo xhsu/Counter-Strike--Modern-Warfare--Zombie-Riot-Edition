@@ -16,6 +16,7 @@
 #define TASK_INVINCIBLE 6849387
 
 #define INVINCIBLE_TIME 1.5
+#define INVINCIBLE_SFX	"leadermode/attack_out_of_range_01.wav"
 
 new Float:g_rgflLastFullHealth[33];
 
@@ -24,11 +25,6 @@ public plugin_init()
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	RegisterHam(Ham_TakeDamage, "player", "HamF_TakeDamage");
-}
-
-public plugin_precache()
-{
-	precache_sound("leadermode/attack_out_of_range_01.wav");
 }
 
 public HamF_TakeDamage(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamageTypes)
@@ -41,10 +37,10 @@ public HamF_TakeDamage(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamag
 		g_rgflLastFullHealth[iVictim] = get_gametime();
 
 	if (get_gametime() - g_rgflLastFullHealth[iVictim] > INVINCIBLE_TIME)
-		return;
+		return HAM_IGNORED;
 
 	if (task_exists(iVictim + TASK_INVINCIBLE))
-		return;
+		return HAM_IGNORED;
 
 	if (flDamage > (flHealth - 1.0))
 	{
@@ -52,11 +48,13 @@ public HamF_TakeDamage(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamag
 		set_task(INVINCIBLE_TIME, "Task_RemoveInvincible", iVictim + TASK_INVINCIBLE);
 
 		UTIL_ScreenFade(iVictim, 0.5, INVINCIBLE_TIME - 0.5, FFADE_IN, 0x9D, 0x02, 0x08, 64);
-		emit_sound(iVictim, CHAN_AUTO, "leadermode/attack_out_of_range_01.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		// client_cmd(iVictim, "spk %s", "leadermode/attack_out_of_range_01.wav");
+		// emit_sound(iVictim, CHAN_AUTO, INVINCIBLE_SFX, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		client_cmd(iVictim, "spk %s", INVINCIBLE_SFX);
 
 		SetHamParamFloat(4, flHealth - 1.0);
 	}
+
+	return HAM_HANDLED;
 }
 
 public Task_RemoveInvincible(iPlayer)
