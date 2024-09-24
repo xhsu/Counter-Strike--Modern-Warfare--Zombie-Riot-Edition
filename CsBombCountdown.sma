@@ -55,7 +55,7 @@ public Message_BombDrop(msg_dest, msg_id, msg_ent)
 	g_vecBombPlant[2] = get_msg_arg_float(3);
 
 	SyncCountdown();
-	set_task(0.8, "Task_SyncCounter", TASK_ID, _, _, "b");
+	set_task(0.9527, "Task_SyncCounter", TASK_ID, _, _, "b");
 
 	return PLUGIN_CONTINUE;
 }

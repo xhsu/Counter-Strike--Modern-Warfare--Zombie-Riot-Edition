@@ -105,7 +105,7 @@ public HamF_Spawn_Post(iPlayer)
 public HamF_TakeDamage_Post(iVictim, iInflictor, iAttacker, Float:flDamage, bitsDamageTypes)
 {
 	new bool:bIsDamaged;
-	GetHamReturnInteger(bIsDamaged);
+	GetOrigHamReturnInteger(bIsDamaged);
 	if (!bIsDamaged)
 		return;
 
