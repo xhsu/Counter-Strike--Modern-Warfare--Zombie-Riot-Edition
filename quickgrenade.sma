@@ -11,7 +11,7 @@
 #pragma semicolon 1
 
 #define PLUGIN		"Grenade Quick Throw"
-#define VERSION		"1.4.0"
+#define VERSION		"1.4.1"
 #define AUTHOR		"Luna(plugin) & Matoilet(model)"
 
 /**--------------Configuration: Show a customized progress bar during cooking process?*/
@@ -31,6 +31,7 @@ enum _:GrTypes
 
 new const THROWABLES_WORLD_MDL[][] = { "models/w_hegrenade.mdl", "models/w_flashbang.mdl", "models/w_smokegrenade.mdl" };
 new const THROWABLES_CLASSNAME[][] = { "weapon_hegrenade", "weapon_flashbang", "weapon_smokegrenade" };
+new const THROWABLES_NAME[][] = { "手榴彈", "閃光彈", "煙霧彈" };
 new const QTG_VMDLS[][] = { "models/v_CODhegrenade.mdl", "models/v_CODflashbang.mdl", "models/v_CODflashbang.mdl" };
 new const Float:TIME_PULLPIN[] = { 0.825, 0.825, 0.825 };
 new const Float:TIME_THROW[] = { 0.467, 0.833, 0.833 };
@@ -188,16 +189,19 @@ public Command_QTGStart(iPlayer)
 	// This is not a grenade item, select the first item in slot 4.
 	if (iGrenadeType == NOT_THROWABLE)
 	{
-		for (iGrenadeType = 0; get_pdata_int(iPlayer, m_rgAmmo[THROWABLES_BPAMMO[iGrenadeType]]) <= 0; ++iGrenadeType)
+		for (iGrenadeType = 0;
+			iGrenadeType < sizeof THROWABLES_CLASSNAME && get_pdata_int(iPlayer, m_rgAmmo[THROWABLES_BPAMMO[iGrenadeType]]) <= 0;
+			++iGrenadeType)
 		{
-			// Player has no grenade.
-			if (iGrenadeType >= sizeof THROWABLES_CLASSNAME)
-				return PLUGIN_HANDLED;
 		}
+
+		// Player has no grenade.
+		if (iGrenadeType >= sizeof THROWABLES_CLASSNAME)
+			return PLUGIN_HANDLED;
 	}
 
 	iEntity = FindPlayerGrenadeEntity(iPlayer, iGrenadeType);
-	client_print(iPlayer, print_chat, "Selected: %s", THROWABLES_CLASSNAME[iGrenadeType]);
+	client_print(iPlayer, print_center, "已選擇: %s", THROWABLES_NAME[iGrenadeType]);
 
 	set_pev(iEntity, pev_iuser4, QUICKTHROW_KEY);
 	engclient_cmd(iPlayer, THROWABLES_CLASSNAME[iGrenadeType]);
@@ -456,4 +460,55 @@ stock SetShieldHitgroup(iPlayer, bool:bEnabled)
 {
 	// 0 - has shield, 1 - no shield
 	set_pev(iPlayer, pev_gamestate, !bEnabled);
+}
+
+stock UTIL_PrintChatColor(iPlayer, iColor, const szMessage[], any:...)
+{
+	// a helper to colorize the text.
+	new iDummy = iPlayer;
+	if (!iPlayer)
+	{
+		for(iDummy = 1; iDummy < 33; ++iDummy)
+		{
+			if (is_user_connected(iDummy))
+				break;
+		}
+	}
+
+	new szText[191];
+	vformat(szText, charsmax(szText), szMessage, 4);
+
+	replace_all(szText, charsmax(szText), "\g/", "^x04");
+	replace_all(szText, charsmax(szText), "\y/", "^x01");
+	replace_all(szText, charsmax(szText), "\t/", "^x03");
+
+	static gmsgTeamInfo;
+	if (!gmsgTeamInfo)
+		gmsgTeamInfo = get_user_msgid("TeamInfo");
+	static gmsgSayText;
+	if (!gmsgSayText)
+		gmsgSayText = get_user_msgid("SayText");
+
+	static rgszTeamNames[][] = { "UNASSIGNED", "TERRORIST", "CT", "SPECTATOR" };
+
+	if (1 <= iColor <= 3)
+	{
+		message_begin(iPlayer ? MSG_ONE_UNRELIABLE : MSG_BROADCAST, gmsgTeamInfo, _, iPlayer);
+		write_byte(iDummy);
+		write_string(rgszTeamNames[iColor]);
+		message_end();
+	}
+
+	message_begin(iPlayer ? MSG_ONE_UNRELIABLE : MSG_BROADCAST, gmsgSayText, _, iPlayer);
+	write_byte(iDummy);
+	write_string(szText);
+	message_end();
+
+	if (1 <= iColor <= 3)
+	{
+		message_begin(iPlayer ? MSG_ONE_UNRELIABLE : MSG_BROADCAST, gmsgTeamInfo, _, iPlayer);
+		write_byte(iDummy);
+		write_string(rgszTeamNames[get_pdata_int(iDummy, m_iTeam)]);
+		message_end();
+	}
 }
