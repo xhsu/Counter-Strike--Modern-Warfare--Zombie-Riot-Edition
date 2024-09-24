@@ -18,3 +18,10 @@ Modern Warfare Dev Team
  * @Returning: NONE.
 */
 native Uranus_DropShield(iPlayer);
+
+/*
+ * Purpose: Calling "bool CBasePlayer::CanPlayerBuy(bool display = true);"
+ * @Argument iPlayer: player entity id.
+ * @Returning: Whether player is capable of purchasing anything right now.
+*/
+native bool:Uranus_CanPlayerBuy(iPlayer);

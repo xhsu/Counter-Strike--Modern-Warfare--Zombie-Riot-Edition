@@ -61,6 +61,9 @@ public fw_ClientCommand(iPlayer)
 		if (strcmp(szCommand, WEAPON_BUY_COMMANDS[i]))
 			continue;
 
+		if (!Uranus_CanPlayerBuy(iPlayer))
+			return FMRES_SUPERCEDE;
+
 		new iMoney = get_pdata_int(iPlayer, m_iAccount);
 
 		if (iMoney < WEAPON_CS_COST[i])
@@ -124,6 +127,9 @@ public fw_ClientCommand(iPlayer)
 
 	if (!strcmp(szCommand, "buyammo1"))
 	{
+		if (!Uranus_CanPlayerBuy(iPlayer))
+			return FMRES_SUPERCEDE;
+
 		new iSlot = get_pdata_bool(iPlayer, m_bOwnsShield) ? 2 : 1;
 
 		if (GiveClipInSlot(iPlayer, iSlot))
@@ -133,6 +139,9 @@ public fw_ClientCommand(iPlayer)
 	}
 	else if (!strcmp(szCommand, "buyammo2"))
 	{
+		if (!Uranus_CanPlayerBuy(iPlayer))
+			return FMRES_SUPERCEDE;
+
 		if (GiveClipInSlot(iPlayer, 2))
 			engfunc(EngFunc_EmitSound, iPlayer, CHAN_ITEM, "items/9mmclip1.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
@@ -140,6 +149,9 @@ public fw_ClientCommand(iPlayer)
 	}
 	else if (!strcmp(szCommand, "primammo"))
 	{
+		if (!Uranus_CanPlayerBuy(iPlayer))
+			return FMRES_SUPERCEDE;
+
 		new iSlot = get_pdata_bool(iPlayer, m_bOwnsShield) ? 2 : 1;
 
 		BuyAmmoInSlot(iPlayer, iSlot);
@@ -147,6 +159,9 @@ public fw_ClientCommand(iPlayer)
 	}
 	else if (!strcmp(szCommand, "secammo"))
 	{
+		if (!Uranus_CanPlayerBuy(iPlayer))
+			return FMRES_SUPERCEDE;
+
 		BuyAmmoInSlot(iPlayer, 2);
 		return FMRES_SUPERCEDE;
 	}
@@ -155,6 +170,9 @@ public fw_ClientCommand(iPlayer)
 
 	else if (!strcmp(szCommand, "shield"))
 	{
+		if (!Uranus_CanPlayerBuy(iPlayer))
+			return FMRES_SUPERCEDE;
+
 		if (get_pdata_bool(iPlayer, m_bOwnsShield))
 		{
 			UTIL_TextMsg(iPlayer, print_center, "#Cstrike_Already_Own_Weapon");
