@@ -12,7 +12,7 @@
 #pragma semicolon 1
 
 #define PLUGIN		"Passive Healing"
-#define VERSION		"1.1.2"
+#define VERSION		"1.1.3"
 #define AUTHOR		"xhsu"
 
 // Spectator Movement modes (stored in pev->iuser1, so the physics code can get at them)
@@ -55,7 +55,7 @@ public fw_PlayerPostThink_Post(iPlayer)
 	static Float:flCurHealth;
 	pev(iPlayer, pev_health, flCurHealth);
 
-	if (flCurHealth < flMaxHealth)
+	if (floatround(flCurHealth) < floatround(flMaxHealth))
 	{
 		flCurHealth += flMaxHealth * 0.05;
 
@@ -66,31 +66,31 @@ public fw_PlayerPostThink_Post(iPlayer)
 		}
 
 		set_pev(iPlayer, pev_health, flCurHealth);
-	}
 
-	if (g_flShouldDoFx[iPlayer])
-	{
-		g_flShouldDoFx[iPlayer] = false;
-
-		client_cmd(iPlayer, "spk %s", "items/medshot4.wav");
-
-		// This is just a VFX, dont cheese it against flashbang.
-		if (!PlayerUtl_IsBlind(iPlayer))
+		if (g_flShouldDoFx[iPlayer])
 		{
-			UTIL_ScreenFade(iPlayer, 0.5, 0.0, FFADE_IN, 5, 152, 205, 64);
+			g_flShouldDoFx[iPlayer] = false;
 
-			// Sync the effect to whoever watching this character.
-			new iObsMode = 0;
-			for (new i = 1; i <= global_get(glb_maxClients); ++i)
+			client_cmd(iPlayer, "spk %s", "items/medshot4.wav");
+
+			// This is just a VFX, dont cheese it against flashbang.
+			if (!PlayerUtl_IsBlind(iPlayer))
 			{
-				iObsMode = pev(i, pev_iuser1);
-				if (iObsMode != OBS_CHASE_LOCKED && iObsMode != OBS_CHASE_FREE && iObsMode != OBS_IN_EYE)
-					continue;
+				UTIL_ScreenFade(iPlayer, 0.5, 0.0, FFADE_IN, 5, 152, 205, 64);
 
-				if (get_pdata_ehandle(i, m_hObserverTarget) == iPlayer)
+				// Sync the effect to whoever watching this character.
+				new iObsMode = 0;
+				for (new i = 1; i <= global_get(glb_maxClients); ++i)
 				{
-					UTIL_ScreenFade(i, 0.5, 0.0, FFADE_IN, 5, 152, 205, 64);
-					client_cmd(i, "spk %s", "items/medshot4.wav");
+					iObsMode = pev(i, pev_iuser1);
+					if (iObsMode != OBS_CHASE_LOCKED && iObsMode != OBS_CHASE_FREE && iObsMode != OBS_IN_EYE)
+						continue;
+
+					if (get_pdata_ehandle(i, m_hObserverTarget) == iPlayer)
+					{
+						UTIL_ScreenFade(i, 0.5, 0.0, FFADE_IN, 5, 152, 205, 64);
+						client_cmd(i, "spk %s", "items/medshot4.wav");
+					}
 				}
 			}
 		}
